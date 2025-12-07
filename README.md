@@ -10,13 +10,13 @@
 
 DSPy-TOON provides a custom adapter for [DSPy](https://github.com/stanfordnlp/dspy) that uses TOON format instead of JSON for structured outputs. TOON is a compact, human-readable serialization format optimized for LLM contexts, achieving **65% fewer output tokens** for tabular data.
 
-## ✨ Key Features
+## Key Features
 
 - **40%+ Total Token Reduction** - Significant savings on both input and output tokens
 - **65% Output Token Reduction** - Tabular format dramatically reduces response tokens for lists
 - **Seamless DSPy Integration** - Drop-in replacement for JSONAdapter
 
-## 📦 Installation
+## Installation
 
 ```bash
 # Install from GitHub (recommended during beta)
@@ -31,7 +31,7 @@ cd dspy-toon
 pip install -e ".[dev]"
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ```python
 import dspy
@@ -61,7 +61,7 @@ print(result.user)
 # UserInfo(name='Alice Johnson', age=35, occupation='software engineer')
 ```
 
-## 📊 TOON Format
+## TOON Format
 
 TOON uses compact syntax that LLMs can easily produce and parse:
 
@@ -78,7 +78,7 @@ TOON uses compact syntax that LLMs can easily produce and parse:
   3,Person 3,23
 ```
 
-## 📈 Benchmarks
+## Benchmarks
 
 Real token usage measured with DSPy's `track_usage=True` on `gemini/gemini-2.5-flash-lite`:
 
@@ -108,7 +108,7 @@ Run benchmarks:
 python -m benchmarks.adapter_comparison --model gemini/gemini-2.5-flash-lite
 ```
 
-## 📚 Examples
+## Examples
 
 ### Sentiment Analysis
 
@@ -200,7 +200,7 @@ print(result.profile)
 
 See the `examples/` directory for complete working examples.
 
-## 🧪 Development
+## Development
 
 ```bash
 # Clone repository
@@ -224,7 +224,7 @@ ruff check src/ tests/
 ruff format src/ tests/
 ```
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Core ToonAdapter implementation
 - [x] Token usage benchmarks
@@ -232,15 +232,15 @@ ruff format src/ tests/
 - [ ] Integration with DSPy optimizers (MIPROv2, BootstrapFewShot)
 - [ ] More benchmarks on complex data and optimizations
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📄 License
+## License
 
 MIT License
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [DSPy](https://github.com/stanfordnlp/dspy) - The foundation framework
 - [TOON Format](https://github.com/toon-format/spec) - Original TOON specification
