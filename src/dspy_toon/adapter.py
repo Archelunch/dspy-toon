@@ -14,11 +14,11 @@ import re
 import types
 from typing import Any, Literal, Union, get_args, get_origin
 
-from dspy.adapters.base import Adapter
-from dspy.adapters.types import History
-from dspy.signatures.signature import Signature
-from dspy.utils.callback import BaseCallback
-from dspy.utils.exceptions import AdapterParseError
+from dspy.adapters.base import Adapter  # type: ignore[import-untyped]
+from dspy.adapters.types import History  # type: ignore[import-untyped]
+from dspy.signatures.signature import Signature  # type: ignore[import-untyped]
+from dspy.utils.callback import BaseCallback  # type: ignore[import-untyped]
+from dspy.utils.exceptions import AdapterParseError  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
 from .toon import decode, encode

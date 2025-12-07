@@ -27,7 +27,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, TypeGuard
 
 # =============================================================================
 # Type Definitions
@@ -318,17 +318,17 @@ def normalize_value(value: Any) -> JsonValue:
     return None
 
 
-def is_json_primitive(value: Any) -> bool:
+def is_json_primitive(value: Any) -> TypeGuard[JsonPrimitive]:
     """Check if value is a JSON primitive type."""
     return value is None or isinstance(value, (str, int, float, bool))
 
 
-def is_json_array(value: Any) -> bool:
+def is_json_array(value: Any) -> TypeGuard[JsonArray]:
     """Check if value is a JSON array."""
     return isinstance(value, list)
 
 
-def is_json_object(value: Any) -> bool:
+def is_json_object(value: Any) -> TypeGuard[JsonObject]:
     """Check if value is a JSON object."""
     return isinstance(value, dict)
 

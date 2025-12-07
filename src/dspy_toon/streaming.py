@@ -27,8 +27,8 @@ Usage:
 import re
 from queue import Queue
 
-from dspy.dsp.utils.settings import settings
-from dspy.streaming.streaming_listener import ADAPTER_SUPPORT_STREAMING, StreamListener
+from dspy.dsp.utils.settings import settings  # type: ignore[import-untyped]
+from dspy.streaming.streaming_listener import ADAPTER_SUPPORT_STREAMING, StreamListener  # type: ignore[import-untyped]
 
 from .adapter import ToonAdapter
 
@@ -107,3 +107,4 @@ def is_streaming_enabled() -> bool:
 
 # Auto-enable when module is imported (optional - can be disabled)
 # enable_toon_streaming()
+
