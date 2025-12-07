@@ -27,16 +27,16 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, TypedDict, Union
+from typing import Any, Literal, TypedDict
 
 # =============================================================================
 # Type Definitions
 # =============================================================================
 
-JsonPrimitive = Union[str, int, float, bool, None]
+JsonPrimitive = str | int | float | bool | None
 JsonObject = dict[str, Any]
 JsonArray = list[Any]
-JsonValue = Union[JsonPrimitive, JsonArray, JsonObject]
+JsonValue = JsonPrimitive | JsonArray | JsonObject
 Delimiter = str
 Depth = int
 
@@ -641,9 +641,7 @@ class ParsedLine:
         return not self.content.strip()
 
 
-def _to_parsed_lines(
-    input_str: str, indent_size: int, strict: bool
-) -> tuple[list[ParsedLine], dict[int, int]]:
+def _to_parsed_lines(input_str: str, indent_size: int, strict: bool) -> tuple[list[ParsedLine], dict[int, int]]:
     """Parse input string into ParsedLine objects."""
     lines = input_str.split("\n")
     parsed = []
@@ -658,9 +656,7 @@ def _to_parsed_lines(
         else:
             depth = indent
         content = raw.lstrip()
-        parsed.append(
-            ParsedLine(raw=raw, depth=depth, indent=indent, content=content, line_num=i + 1)
-        )
+        parsed.append(ParsedLine(raw=raw, depth=depth, indent=indent, content=content, line_num=i + 1))
     return parsed, blank_lines_info
 
 
@@ -769,9 +765,7 @@ def _is_row_line(line: str, delimiter: str) -> bool:
     return char == delimiter
 
 
-def _decode_inline_array(
-    content: str, delimiter: str, expected_length: int, strict: bool
-) -> list[Any]:
+def _decode_inline_array(content: str, delimiter: str, expected_length: int, strict: bool) -> list[Any]:
     """Decode an inline primitive array."""
     if not content and expected_length == 0:
         return []
@@ -815,9 +809,7 @@ def _decode_tabular_array(
             tokens = parse_delimited_values(content, delimiter)
             values = [_parse_primitive(token) for token in tokens]
             if strict and len(values) != len(fields):
-                raise ToonDecodeError(
-                    f"Expected {len(fields)} values in row, but got {len(values)}"
-                )
+                raise ToonDecodeError(f"Expected {len(fields)} values in row, but got {len(values)}")
             obj = {fields[j]: values[j] for j in range(min(len(fields), len(values)))}
             result.append(obj)
             i += 1
@@ -929,16 +921,12 @@ def _decode_array_from_header(
     if inline_content or (not fields and length == 0):
         return (_decode_inline_array(inline_content, delimiter, length, strict), header_idx + 1)
     if fields is not None:
-        return _decode_tabular_array(
-            lines, header_idx + 1, header_depth, fields, delimiter, length, strict
-        )
+        return _decode_tabular_array(lines, header_idx + 1, header_depth, fields, delimiter, length, strict)
     else:
         return _decode_list_array(lines, header_idx + 1, header_depth, delimiter, length, strict)
 
 
-def _decode_object(
-    lines: list[ParsedLine], start_idx: int, parent_depth: int, strict: bool
-) -> dict[str, Any]:
+def _decode_object(lines: list[ParsedLine], start_idx: int, parent_depth: int, strict: bool) -> dict[str, Any]:
     """Decode an object starting at given line index."""
     result: dict[str, Any] = {}
     i = start_idx
@@ -958,9 +946,7 @@ def _decode_object(
         if header_info is not None:
             key, length, delimiter, fields = header_info
             if key is not None:
-                array_val, next_i = _decode_array_from_header(
-                    lines, i, line.depth, header_info, strict
-                )
+                array_val, next_i = _decode_array_from_header(lines, i, line.depth, header_info, strict)
                 result[key] = array_val
                 i = next_i
                 continue

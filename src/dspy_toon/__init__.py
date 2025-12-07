@@ -29,6 +29,7 @@ Example:
 """
 
 from .adapter import ToonAdapter
+from .streaming import enable_toon_streaming, is_streaming_enabled
 from .toon import ToonDecodeError, decode, encode
 
 __version__ = "0.1.0"
@@ -37,4 +38,6 @@ __all__ = [
     "encode",
     "decode",
     "ToonDecodeError",
+    "enable_toon_streaming",
+    "is_streaming_enabled",
 ]

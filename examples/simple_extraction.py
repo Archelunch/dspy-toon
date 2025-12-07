@@ -38,9 +38,7 @@ class PersonInfo(BaseModel):
 class SentimentResult(BaseModel):
     """Sentiment analysis result."""
 
-    sentiment: Literal["positive", "negative", "neutral"] = Field(
-        description="Overall sentiment of the text"
-    )
+    sentiment: Literal["positive", "negative", "neutral"] = Field(description="Overall sentiment of the text")
     confidence: float = Field(
         description="Confidence score between 0 and 1",
         ge=0.0,
@@ -115,9 +113,7 @@ def analyze_sentiment_example():
         print(f"\n📄 Input: {text[:60]}...")
         try:
             result = analyzer(text=text)
-            emoji = {"positive": "😊", "negative": "😞", "neutral": "😐"}.get(
-                result.result.sentiment, "❓"
-            )
+            emoji = {"positive": "😊", "negative": "😞", "neutral": "😐"}.get(result.result.sentiment, "❓")
             print(f"{emoji} Sentiment: {result.result.sentiment}")
             print(f"   Confidence: {result.result.confidence:.2f}")
             print(f"   Reasoning: {result.result.reasoning}")

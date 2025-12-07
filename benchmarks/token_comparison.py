@@ -109,22 +109,19 @@ BENCHMARK_DATASETS = {
     "user_list_small": {
         "description": "Small list of uniform user objects (5 users)",
         "data": [
-            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0}
-            for i in range(1, 6)
+            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0} for i in range(1, 6)
         ],
     },
     "user_list_medium": {
         "description": "Medium list of uniform user objects (20 users)",
         "data": [
-            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0}
-            for i in range(1, 21)
+            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0} for i in range(1, 21)
         ],
     },
     "user_list_large": {
         "description": "Large list of uniform user objects (100 users)",
         "data": [
-            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0}
-            for i in range(1, 101)
+            {"id": i, "name": f"User{i}", "email": f"user{i}@example.com", "active": i % 2 == 0} for i in range(1, 101)
         ],
     },
     "products_catalog": {
@@ -316,9 +313,7 @@ def print_results(results: list[BenchmarkResult]) -> None:
         baseline_tokens = baseline.tokens
 
         for fmt in result.formats:
-            savings = (
-                (baseline_tokens - fmt.tokens) / baseline_tokens * 100 if baseline_tokens > 0 else 0
-            )
+            savings = (baseline_tokens - fmt.tokens) / baseline_tokens * 100 if baseline_tokens > 0 else 0
             savings_str = f"{savings:+.1f}%" if fmt.name != "JSON" else "-"
             print(f"{fmt.name:<20} {fmt.tokens:>10} {fmt.chars:>10} {savings_str:>12}")
 
@@ -327,12 +322,8 @@ def print_results(results: list[BenchmarkResult]) -> None:
     print("SUMMARY")
     print("=" * 80)
 
-    total_json_tokens = sum(
-        next((f.tokens for f in r.formats if f.name == "JSON"), 0) for r in results
-    )
-    total_toon_tokens = sum(
-        next((f.tokens for f in r.formats if f.name == "TOON"), 0) for r in results
-    )
+    total_json_tokens = sum(next((f.tokens for f in r.formats if f.name == "JSON"), 0) for r in results)
+    total_toon_tokens = sum(next((f.tokens for f in r.formats if f.name == "TOON"), 0) for r in results)
 
     if total_json_tokens > 0:
         overall_savings = (total_json_tokens - total_toon_tokens) / total_json_tokens * 100

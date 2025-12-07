@@ -132,9 +132,7 @@ def demonstrate_tabular_format():
         print(f"   JSON (compact): {json_tokens} tokens, {len(json_compact)} chars")
         print(f"   TOON (tabular): {toon_tokens} tokens, {len(toon_output)} chars")
         print(f"   Token savings: {savings:.1f}%")
-        print(
-            f"   Character savings: {(len(json_compact) - len(toon_output)) / len(json_compact) * 100:.1f}%"
-        )
+        print(f"   Character savings: {(len(json_compact) - len(toon_output)) / len(json_compact) * 100:.1f}%")
     except ImportError:
         print("\n(Install tiktoken to see token comparison)")
 

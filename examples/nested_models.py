@@ -45,9 +45,7 @@ class Skill(BaseModel):
     """Professional skill."""
 
     name: str = Field(description="Skill name")
-    level: Literal["beginner", "intermediate", "advanced", "expert"] = Field(
-        description="Proficiency level"
-    )
+    level: Literal["beginner", "intermediate", "advanced", "expert"] = Field(description="Proficiency level")
     years: int | None = Field(description="Years of experience")
 
 
@@ -221,9 +219,7 @@ def extract_job_example():
         print(f"   Title: {result.job.title}")
         print(f"   Company: {result.job.company.name}")
         print(f"   Industry: {result.job.company.industry}")
-        print(
-            f"   Location: {result.job.company.headquarters.city}, {result.job.company.headquarters.country}"
-        )
+        print(f"   Location: {result.job.company.headquarters.city}, {result.job.company.headquarters.country}")
         print(f"   Salary: {result.job.salary_range}")
         print(f"   Requirements: {len(result.job.requirements)} items")
         print(f"   Benefits: {len(result.job.benefits)} items")

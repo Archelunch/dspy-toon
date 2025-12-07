@@ -15,6 +15,7 @@ DSPy-TOON provides a custom adapter for [DSPy](https://github.com/stanfordnlp/ds
 - **40%+ Total Token Reduction** - Significant savings on both input and output tokens
 - **65% Output Token Reduction** - Tabular format dramatically reduces response tokens for lists
 - **Seamless DSPy Integration** - Drop-in replacement for JSONAdapter
+- **Async & Streaming Support** - Full support for `dspy.asyncify()` and `dspy.streamify()`
 
 ## Installation
 
@@ -200,6 +201,87 @@ print(result.profile)
 
 See the `examples/` directory for complete working examples.
 
+## Async & Streaming
+
+ToonAdapter fully supports DSPy's async operations and token-level streaming.
+
+### Async Operations
+
+Use `dspy.asyncify()` for async operations:
+
+```python
+import asyncio
+import dspy
+from dspy_toon import ToonAdapter
+
+dspy.configure(lm=dspy.LM("openai/gpt-4o-mini"), adapter=ToonAdapter())
+
+predict = dspy.Predict("question -> answer")
+async_predict = dspy.asyncify(predict)
+
+async def main():
+    result = await async_predict(question="What is the capital of France?")
+    print(result.answer)
+
+asyncio.run(main())
+```
+
+### Token-Level Streaming
+
+For real-time token streaming, enable ToonAdapter streaming support:
+
+```python
+import asyncio
+import dspy
+from dspy_toon import ToonAdapter, enable_toon_streaming
+
+# Enable streaming support (call once at startup)
+enable_toon_streaming()
+
+# Configure DSPy
+dspy.configure(lm=dspy.LM("openai/gpt-4o-mini", cache=False), adapter=ToonAdapter())
+
+predict = dspy.Predict("question -> answer")
+
+# Create streaming predictor
+stream_predict = dspy.streamify(
+    predict,
+    stream_listeners=[dspy.streaming.StreamListener(signature_field_name="answer")],
+)
+
+async def stream_response():
+    async for chunk in stream_predict(question="Explain quantum computing briefly."):
+        if isinstance(chunk, dspy.streaming.StreamResponse):
+            print(chunk.chunk, end="", flush=True)  # Print tokens as they arrive
+        elif isinstance(chunk, dspy.Prediction):
+            print(f"\n\nFinal: {chunk.answer}")
+
+asyncio.run(stream_response())
+```
+
+### Synchronous Streaming
+
+For sync streaming, set `async_streaming=False`:
+
+```python
+import dspy
+from dspy_toon import ToonAdapter, enable_toon_streaming
+
+enable_toon_streaming()
+dspy.configure(lm=dspy.LM("openai/gpt-4o-mini", cache=False), adapter=ToonAdapter())
+
+predict = dspy.Predict("question -> answer")
+stream_predict = dspy.streamify(
+    predict,
+    stream_listeners=[dspy.streaming.StreamListener(signature_field_name="answer")],
+    async_streaming=False,  # Sync mode
+)
+
+for chunk in stream_predict(question="What is 2+2?"):
+    if isinstance(chunk, dspy.streaming.StreamResponse):
+        print(chunk.chunk, end="", flush=True)
+```
+
 ## Development
 
 ```bash
@@ -229,6 +311,8 @@ ruff format src/ tests/
 - [x] Core ToonAdapter implementation
 - [x] Token usage benchmarks
 - [x] BAML adapter comparison benchmarks
+- [x] Async support via `dspy.asyncify()`
+- [x] Token-level streaming via `enable_toon_streaming()`
 - [ ] Integration with DSPy optimizers (MIPROv2, BootstrapFewShot)
 - [ ] More benchmarks on complex data and optimizations
 

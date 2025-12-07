@@ -9,14 +9,21 @@ while maintaining readability.
 
 import inspect
 import json
+import logging
+import re
 import types
 from typing import Any, Literal, Union, get_args, get_origin
 
 from dspy.adapters.base import Adapter
+from dspy.adapters.types import History
 from dspy.signatures.signature import Signature
+from dspy.utils.callback import BaseCallback
+from dspy.utils.exceptions import AdapterParseError
 from pydantic import BaseModel
 
 from .toon import decode, encode
+
+logger = logging.getLogger(__name__)
 
 # Comment symbol for schema descriptions
 COMMENT_SYMBOL = "#"
@@ -52,9 +59,7 @@ def _render_type_str(
     # Optional[T] or T | None
     if origin in (types.UnionType, Union):
         non_none_args = [arg for arg in args if arg is not type(None)]
-        type_render = " or ".join(
-            [_render_type_str(arg, depth + 1, indent, seen_models) for arg in non_none_args]
-        )
+        type_render = " or ".join([_render_type_str(arg, depth + 1, indent, seen_models) for arg in non_none_args])
         if len(non_none_args) < len(args):
             return f"{type_render} or null"
         return type_render
@@ -72,14 +77,12 @@ def _render_type_str(
             return f"[COUNT]{{{fields_str}}}:\n  value1,value2,...\n  (one row per item, COUNT = number of items)"
         else:
             inner_str = _render_type_str(inner_type, depth + 1, indent, seen_models)
-            return f"[COUNT]: {inner_str},... (COUNT = number of items)"
+            return f"[COUNT]: {inner_str},... (COUNT = num items)"
 
     # dict[K, V]
     if origin is dict:
         key_type = _render_type_str(args[0], depth + 1, indent, seen_models) if args else "string"
-        val_type = (
-            _render_type_str(args[1], depth + 1, indent, seen_models) if len(args) > 1 else "any"
-        )
+        val_type = _render_type_str(args[1], depth + 1, indent, seen_models) if len(args) > 1 else "any"
         return f"dict[{key_type}, {val_type}]"
 
     # Fallback
@@ -108,9 +111,7 @@ def _build_toon_schema(
         if field.description:
             lines.append(f"{current_indent}{COMMENT_SYMBOL} {field.description}")
 
-        rendered_type = _render_type_str(
-            field.annotation, indent=indent + 1, seen_models=seen_models
-        )
+        rendered_type = _render_type_str(field.annotation, indent=indent + 1, seen_models=seen_models)
 
         if "\n" in rendered_type:
             lines.append(f"{current_indent}{name}:")
@@ -147,11 +148,20 @@ def _get_output_schema(field_name: str, field_type: Any) -> str:
 
     # List of primitives
     if origin is list:
-        inner_str = _render_type_str(args[0] if args else Any)
         return f"{field_name}: [3]: val1,val2,val3 (replace 3 with actual count)"
 
     # Simple types
     return f"{field_name}: {_render_type_str(field_type)}"
+
+
+def _encode_value(value: Any) -> str:
+    """Encode a value to TOON format string."""
+    if isinstance(value, BaseModel):
+        return encode(value.model_dump())
+    elif isinstance(value, (list, dict)):
+        return encode(value)
+    else:
+        return str(value)
 
 
 class ToonAdapter(Adapter):
@@ -204,6 +214,23 @@ class ToonAdapter(Adapter):
         ```
     """
 
+    def __init__(
+        self,
+        callbacks: list[BaseCallback] | None = None,
+        use_native_function_calling: bool = False,
+    ):
+        """Initialize the ToonAdapter.
+
+        Args:
+            callbacks: List of callback functions to execute during format() and parse().
+            use_native_function_calling: Whether to enable native function calling when
+                the LM supports it. Defaults to False.
+        """
+        super().__init__(
+            callbacks=callbacks,
+            use_native_function_calling=use_native_function_calling,
+        )
+
     def format_field_description(self, signature: type[Signature]) -> str:
         """Format input/output field descriptions."""
         sections = []
@@ -253,36 +280,53 @@ TOON Format (NOT JSON):
         signature: type[Signature],
         demos: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Format few-shot examples."""
-        messages = []
+        """Format few-shot examples.
+
+        Separates demos into complete (all fields present) and incomplete demos,
+        following the base adapter pattern.
+        """
+        complete_demos = []
+        incomplete_demos = []
 
         for demo in demos:
-            # Format input
-            input_parts = []
-            for name in signature.input_fields.keys():
-                if name in demo:
-                    value = demo[name]
-                    if isinstance(value, BaseModel):
-                        input_parts.append(f"{name}:\n{encode(value.model_dump())}")
-                    else:
-                        input_parts.append(f"{name}: {value}")
+            # Check if all fields are present and not None
+            is_complete = all(k in demo and demo[k] is not None for k in signature.fields)
 
-            # Format output
-            output_parts = []
-            for name in signature.output_fields.keys():
-                if name in demo:
-                    value = demo[name]
-                    if isinstance(value, BaseModel):
-                        output_parts.append(f"{name}:\n{encode(value.model_dump())}")
-                    elif isinstance(value, list):
-                        output_parts.append(f"{name}:\n{encode(value)}")
-                    else:
-                        output_parts.append(f"{name}: {value}")
+            # Check if demo has at least one input and one output field
+            has_input = any(k in demo for k in signature.input_fields)
+            has_output = any(k in demo for k in signature.output_fields)
 
-            if input_parts:
-                messages.append({"role": "user", "content": "\n".join(input_parts)})
-            if output_parts:
-                messages.append({"role": "assistant", "content": "\n".join(output_parts)})
+            if is_complete:
+                complete_demos.append(demo)
+            elif has_input and has_output:
+                incomplete_demos.append(demo)
+
+        messages = []
+
+        # Format incomplete demos with prefix
+        incomplete_demo_prefix = "This is an example of the task, though some input or output fields are not supplied."
+        for demo in incomplete_demos:
+            user_content = self.format_user_message_content(signature, demo, prefix=incomplete_demo_prefix)
+            messages.append({"role": "user", "content": user_content})
+            assistant_content = self.format_assistant_message_content(
+                signature, demo, missing_field_message="Not supplied for this particular example."
+            )
+            messages.append({"role": "assistant", "content": assistant_content})
+
+        # Format complete demos
+        for demo in complete_demos:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": self.format_user_message_content(signature, demo),
+                }
+            )
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": self.format_assistant_message_content(signature, demo),
+                }
+            )
 
         return messages
 
@@ -302,12 +346,11 @@ TOON Format (NOT JSON):
         for name, field in signature.input_fields.items():
             if name in inputs:
                 value = inputs[name]
-                if isinstance(value, BaseModel):
-                    parts.append(f"{name}:\n{encode(value.model_dump())}")
-                elif isinstance(value, (list, dict)):
-                    parts.append(f"{name}:\n{encode(value)}")
+                encoded = _encode_value(value)
+                if "\n" in encoded or isinstance(value, (BaseModel, list, dict)):
+                    parts.append(f"{name}:\n{encoded}")
                 else:
-                    parts.append(f"{name}: {value}")
+                    parts.append(f"{name}: {encoded}")
 
         if main_request:
             parts.append("\nProvide output in TOON format as shown above.")
@@ -315,7 +358,35 @@ TOON Format (NOT JSON):
         if suffix:
             parts.append(suffix)
 
-        return "\n\n".join(parts)
+        return "\n\n".join(parts).strip()
+
+    def format_assistant_message_content(
+        self,
+        signature: type[Signature],
+        outputs: dict[str, Any],
+        missing_field_message: str | None = None,
+    ) -> str:
+        """Format assistant message content in TOON format.
+
+        Args:
+            signature: The DSPy signature for which to format the assistant message.
+            outputs: The output fields to be formatted.
+            missing_field_message: A message to use when a field is missing.
+
+        Returns:
+            A string containing the formatted assistant message.
+        """
+        parts = []
+        for name in signature.output_fields.keys():
+            value = outputs.get(name, missing_field_message)
+            if value is None:
+                continue
+            encoded = _encode_value(value)
+            if "\n" in encoded or isinstance(value, (BaseModel, list, dict)):
+                parts.append(f"{name}:\n{encoded}")
+            else:
+                parts.append(f"{name}: {encoded}")
+        return "\n".join(parts)
 
     def format_conversation_history(
         self,
@@ -323,23 +394,77 @@ TOON Format (NOT JSON):
         history_field_name: str,
         inputs: dict[str, Any],
     ) -> list[dict[str, Any]]:
-        """Format conversation history."""
-        history = inputs.pop(history_field_name, [])
-        messages = []
+        """Format conversation history.
 
-        for entry in history:
-            if isinstance(entry, dict):
-                if "user" in entry:
-                    messages.append({"role": "user", "content": str(entry["user"])})
-                if "assistant" in entry:
-                    messages.append({"role": "assistant", "content": str(entry["assistant"])})
+        Supports both DSPy History objects and legacy list-of-dicts format.
+
+        Args:
+            signature: The DSPy signature (without history field).
+            history_field_name: The name of the history field.
+            inputs: The input arguments (will be modified to remove history).
+
+        Returns:
+            A list of formatted messages.
+        """
+        history_value = inputs.get(history_field_name)
+
+        if history_value is None:
+            if history_field_name in inputs:
+                del inputs[history_field_name]
+            return []
+
+        # Support DSPy History type (has .messages attribute)
+        if hasattr(history_value, "messages"):
+            conversation_history = history_value.messages
+        # Support legacy list-of-dicts format for backwards compatibility
+        elif isinstance(history_value, list):
+            conversation_history = history_value
+        else:
+            logger.warning(f"Unexpected history format for field '{history_field_name}': {type(history_value)}")
+            del inputs[history_field_name]
+            return []
+
+        messages = []
+        for message in conversation_history:
+            if isinstance(message, dict):
+                # Legacy format: {"user": ..., "assistant": ...}
+                if "user" in message:
+                    messages.append({"role": "user", "content": str(message["user"])})
+                if "assistant" in message:
+                    messages.append({"role": "assistant", "content": str(message["assistant"])})
+            else:
+                # DSPy History message format
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": self.format_user_message_content(signature, message),
+                    }
+                )
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": self.format_assistant_message_content(signature, message),
+                    }
+                )
+
+        # Remove the history field from inputs
+        del inputs[history_field_name]
 
         return messages
 
     def _get_history_field_name(self, signature: type[Signature]) -> str | None:
-        """Check if signature has a history field."""
+        """Check if signature has a history field.
+
+        Uses proper type checking for DSPy's History type.
+
+        Args:
+            signature: The DSPy signature to check.
+
+        Returns:
+            The name of the history field, or None if not found.
+        """
         for name, field in signature.input_fields.items():
-            if "history" in name.lower():
+            if field.annotation == History:
                 return name
         return None
 
@@ -347,18 +472,29 @@ TOON Format (NOT JSON):
         """Parse TOON-formatted LLM output into field values.
 
         Attempts to parse as TOON first, falls back to JSON if that fails.
+        Raises AdapterParseError if parsing fails completely.
+
+        Args:
+            signature: The DSPy signature defining expected output fields.
+            completion: The raw LLM response to parse.
+
+        Returns:
+            A dictionary mapping field names to parsed values.
+
+        Raises:
+            AdapterParseError: If the response cannot be parsed or is missing fields.
         """
         result = {}
         completion = completion.strip()
 
-        # Try parsing each output field
+        # Try parsing each output field individually
         for field_name, field in signature.output_fields.items():
             value = self._extract_field_value(completion, field_name, field.annotation)
             if value is not None:
                 result[field_name] = value
 
-        # If we got results, return them
-        if result:
+        # If we got all results, return them
+        if result.keys() == signature.output_fields.keys():
             return result
 
         # Try full TOON parsing
@@ -366,14 +502,12 @@ TOON Format (NOT JSON):
             parsed = decode(completion)
             if isinstance(parsed, dict):
                 for field_name, field in signature.output_fields.items():
-                    if field_name in parsed:
-                        result[field_name] = self._convert_field(
-                            parsed[field_name], field.annotation
-                        )
-                if result:
+                    if field_name in parsed and field_name not in result:
+                        result[field_name] = self._convert_field(parsed[field_name], field.annotation)
+                if result.keys() == signature.output_fields.keys():
                     return result
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TOON parsing failed: {e}")
 
         # Try JSON parsing as fallback
         try:
@@ -386,22 +520,27 @@ TOON Format (NOT JSON):
             parsed = json.loads(json_str)
             if isinstance(parsed, dict):
                 for field_name, field in signature.output_fields.items():
-                    if field_name in parsed:
-                        result[field_name] = self._convert_field(
-                            parsed[field_name], field.annotation
-                        )
-        except Exception:
-            pass
+                    if field_name in parsed and field_name not in result:
+                        result[field_name] = self._convert_field(parsed[field_name], field.annotation)
+        except Exception as e:
+            logger.debug(f"JSON fallback parsing failed: {e}")
+
+        # Check if we have all required fields
+        if result.keys() != signature.output_fields.keys():
+            raise AdapterParseError(
+                adapter_name="ToonAdapter",
+                signature=signature,
+                lm_response=completion,
+                parsed_result=result,
+            )
 
         return result
 
     def _extract_field_value(self, completion: str, field_name: str, field_type: Any) -> Any | None:
         """Extract a specific field value from TOON output."""
-        import re
-
         # Look for field_name: followed by tabular array
         # Pattern: field_name:\n[COUNT]{fields}:\n  rows...
-        pattern = rf"{field_name}:\s*\n(\[\d+\]\{{[^}}]+\}}:[\s\S]*?)(?=\n\w+:|$)"
+        pattern = rf"{re.escape(field_name)}:\s*\n(\[\d+\]\{{[^}}]+\}}:[\s\S]*?)(?=\n\w+:|$)"
         match = re.search(pattern, completion)
 
         if match:
@@ -413,7 +552,7 @@ TOON Format (NOT JSON):
                 pass
 
         # Look for simple field_name: value
-        pattern = rf"^{field_name}:\s*(.+)$"
+        pattern = rf"^{re.escape(field_name)}:\s*(.+)$"
         match = re.search(pattern, completion, re.MULTILINE)
 
         if match:
@@ -446,10 +585,7 @@ TOON Format (NOT JSON):
             inner_type = args[0]
             if inspect.isclass(inner_type) and issubclass(inner_type, BaseModel):
                 if isinstance(value, list):
-                    return [
-                        inner_type.model_validate(item) if isinstance(item, dict) else item
-                        for item in value
-                    ]
+                    return [inner_type.model_validate(item) if isinstance(item, dict) else item for item in value]
 
         # Pydantic model
         if inspect.isclass(field_type) and issubclass(field_type, BaseModel):

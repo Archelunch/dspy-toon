@@ -14,10 +14,10 @@ import argparse
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+import dspy
 from pydantic import BaseModel, Field
 
 from benchmarks.baml_adapter import BAMLAdapter
-
 from dspy_toon import ToonAdapter
 
 # =============================================================================
@@ -60,8 +60,6 @@ class PersonWithAddress(BaseModel):
 # =============================================================================
 # DSPy Signatures
 # =============================================================================
-
-import dspy
 
 
 class ExtractPerson(dspy.Signature):
@@ -285,9 +283,7 @@ def print_results(results: list[TestResult]) -> None:
         for m in sorted_metrics:
             if m.success:
                 marker = " 🏆" if m.total_tokens == min_total else ""
-                print(
-                    f"{m.adapter_name:<20} {m.input_tokens:>8} {m.output_tokens:>8} {m.total_tokens:>8}{marker}"
-                )
+                print(f"{m.adapter_name:<20} {m.input_tokens:>8} {m.output_tokens:>8} {m.total_tokens:>8}{marker}")
             else:
                 print(f"{m.adapter_name:<20} {'ERROR':>8}")
 
