@@ -2,51 +2,46 @@ name: Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   test:
-    name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
 
-      - name: Run tests with coverage
-        run: uv run pytest --cov=toon_format --cov-report=xml --cov-report=term --cov-report=html --cov-fail-under=85
+      - name: Run linting
+        run: |
+          ruff check src/ tests/
 
-      - name: Upload coverage reports as artifact
-        uses: actions/upload-artifact@v4
-        if: matrix.python-version == '3.12'
+      - name: Run type checking
+        run: |
+          mypy src/
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --cov=dspy_toon --cov-report=xml --cov-report=term
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
         with:
-          name: coverage-reports
-          path: |
-            coverage.xml
-            htmlcov/
-          retention-days: 30
-
-      - name: Coverage comment on PR
-        uses: py-cov-action/python-coverage-comment-action@v3
-        if: matrix.python-version == '3.12' && github.event_name == 'pull_request'
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_GREEN: 90
-          MINIMUM_ORANGE: 85
+          files: ./coverage.xml
+          fail_ci_if_error: false

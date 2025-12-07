@@ -1,172 +1,247 @@
-# TOON Format for Python
+# DSPy-TOON
 
-[![Tests](https://github.com/toon-format/toon-python/actions/workflows/test.yml/badge.svg)](https://github.com/toon-format/toon-python/actions)
-[![Python Versions](https://img.shields.io/pypi/pyversions/toon_format.svg)](https://pypi.org/project/toon_format/)
+[![Tests](https://github.com/Archelunch/dspy-toon/actions/workflows/test.yml/badge.svg)](https://github.com/Archelunch/dspy-toon/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **⚠️ Beta Status (v0.9.x):** This library is in active development and working towards spec compliance. Beta published to PyPI. API may change before 1.0.0 release.
+> **DSPy adapter using TOON (Token-Oriented Object Notation) for 40%+ token reduction in structured LLM outputs.**
 
-Compact, human-readable serialization format for LLM contexts with **30-60% token reduction** vs JSON. Combines YAML-like indentation with CSV-like tabular arrays. Working towards full compatibility with the [official TOON specification](https://github.com/toon-format/spec).
+DSPy-TOON provides a custom adapter for [DSPy](https://github.com/stanfordnlp/dspy) that uses TOON format instead of JSON for structured outputs. TOON is a compact, human-readable serialization format optimized for LLM contexts, achieving **65% fewer output tokens** for tabular data.
 
-**Key Features:** Minimal syntax • Tabular arrays for uniform data • Array length validation • Python 3.8+ • Comprehensive test coverage.
+## ✨ Key Features
 
-```bash
-# Beta published to PyPI - install from source:
-git clone https://github.com/toon-format/toon-python.git
-cd toon-python
-uv sync
+- **40%+ Total Token Reduction** - Significant savings on both input and output tokens
+- **65% Output Token Reduction** - Tabular format dramatically reduces response tokens for lists
+- **Seamless DSPy Integration** - Drop-in replacement for JSONAdapter
 
-# Or install directly from GitHub:
-pip install git+https://github.com/toon-format/toon-python.git
-```
-
-## Quick Start
-
-```python
-from toon_format import encode, decode
-
-# Simple object
-encode({"name": "Alice", "age": 30})
-# name: Alice
-# age: 30
-
-# Tabular array (uniform objects)
-encode([{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}])
-# [2,]{id,name}:
-#   1,Alice
-#   2,Bob
-
-# Decode back to Python
-decode("items[2]: apple,banana")
-# {'items': ['apple', 'banana']}
-```
-
-## CLI Usage
+## 📦 Installation
 
 ```bash
-# Auto-detect format by extension
-toon input.json -o output.toon      # Encode
-toon data.toon -o output.json       # Decode
-echo '{"x": 1}' | toon -            # Stdin/stdout
+# Install from GitHub (recommended during beta)
+pip install git+https://github.com/Archelunch/dspy-toon.git
 
-# Options
-toon data.json --encode --delimiter "\t" --length-marker
-toon data.toon --decode --no-strict --indent 4
+# With benchmark dependencies
+pip install "dspy-toon[benchmark] @ git+https://github.com/Archelunch/dspy-toon.git"
+
+# For development
+git clone https://github.com/Archelunch/dspy-toon.git
+cd dspy-toon
+pip install -e ".[dev]"
 ```
 
-**Options:** `-e/--encode` `-d/--decode` `-o/--output` `--delimiter` `--indent` `--length-marker` `--no-strict`
-
-## API Reference
-
-### `encode(value, options=None)` → `str`
+## 🚀 Quick Start
 
 ```python
-encode({"id": 123}, {"delimiter": "\t", "indent": 4, "lengthMarker": "#"})
+import dspy
+from pydantic import BaseModel, Field
+from dspy_toon import ToonAdapter
+
+# Define your Pydantic models
+class UserInfo(BaseModel):
+    name: str = Field(description="Full name")
+    age: int = Field(description="Age in years")
+    occupation: str = Field(description="Job title")
+
+# Define DSPy signature
+class ExtractUser(dspy.Signature):
+    """Extract user information from text."""
+    text: str = dspy.InputField()
+    user: UserInfo = dspy.OutputField()
+
+# Configure DSPy with ToonAdapter
+lm = dspy.LM("openai/gpt-4o-mini")
+dspy.configure(lm=lm, adapter=ToonAdapter())
+
+# Use as normal
+extractor = dspy.Predict(ExtractUser)
+result = extractor(text="Alice Johnson is a 35-year-old software engineer.")
+print(result.user)
+# UserInfo(name='Alice Johnson', age=35, occupation='software engineer')
 ```
 
-**Options:**
-- `delimiter`: `","` (default), `"\t"`, `"|"`
-- `indent`: Spaces per level (default: `2`)
-- `lengthMarker`: `""` (default) or `"#"` to prefix array lengths
+## 📊 TOON Format
 
-### `decode(input_str, options=None)` → `Any`
+TOON uses compact syntax that LLMs can easily produce and parse:
+
+**JSON:**
+```json
+[{"id":1,"name":"Person 1","age":21},{"id":2,"name":"Person 2","age":22},{"id":3,"name":"Person 3","age":23}]
+```
+
+**TOON:**
+```
+[3]{id,name,age}:
+  1,Person 1,21
+  2,Person 2,22
+  3,Person 3,23
+```
+
+## 📈 Benchmarks
+
+Real token usage measured with DSPy's `track_usage=True` on `gemini/gemini-2.5-flash-lite`:
+
+### Token Usage by Test Case
+
+| Test Case | ToonAdapter | BAMLAdapter | JSONAdapter | ChatAdapter |
+|-----------|-------------|-------------|-------------|-------------|
+| Single person | **214** 🏆 | 219 | 326 | 310 |
+| List of 3 people | **272** 🏆 | 308 | 453 | 405 |
+| List of 10 people | **389** 🏆 | 599 | 729 | 597 |
+| List of 5 products | **335** 🏆 | 420 | 573 | 507 |
+| Nested address | 334 | **313** 🏆 | 512 | 472 |
+
+### Total Token Usage (All Tests)
+
+| Adapter | Input | Output | Total | vs JSON |
+|---------|-------|--------|-------|---------|
+| **ToonAdapter** | 1282 | **262** | **1544** 🏆 | **-40.5%** |
+| BAMLAdapter | 1181 | 678 | 1859 | -28.3% |
+| ChatAdapter | 1779 | 512 | 2291 | -11.7% |
+| JSONAdapter | 1855 | 738 | 2593 | - |
+
+**ToonAdapter wins** with **40.5% total savings** and **65% output token reduction** vs JSONAdapter!
+
+Run benchmarks:
+```bash
+python -m benchmarks.adapter_comparison --model gemini/gemini-2.5-flash-lite
+```
+
+## 📚 Examples
+
+### Sentiment Analysis
 
 ```python
-decode("id: 123", {"indent": 2, "strict": True})
+import dspy
+from pydantic import BaseModel, Field
+from typing import Literal
+from dspy_toon import ToonAdapter
+
+class SentimentResult(BaseModel):
+    sentiment: Literal["positive", "negative", "neutral"]
+    confidence: float = Field(description="Confidence score 0-1")
+    key_phrases: list[str] = Field(description="Key phrases that influenced sentiment")
+
+class AnalyzeSentiment(dspy.Signature):
+    """Analyze sentiment of the given text."""
+    text: str = dspy.InputField()
+    result: SentimentResult = dspy.OutputField()
+
+lm = dspy.LM("openai/gpt-4o-mini")
+dspy.configure(lm=lm, adapter=ToonAdapter())
+
+analyzer = dspy.Predict(AnalyzeSentiment)
+result = analyzer(text="I absolutely love this product! Best purchase ever.")
+print(result.result)
 ```
 
-**Options:**
-- `indent`: Expected indent size (default: `2`)
-- `strict`: Validate syntax, lengths, delimiters (default: `True`)
-
-### Token Counting & Comparison
-
-Measure token efficiency and compare formats:
+### Extract Multiple Entities (Tabular)
 
 ```python
-from toon_format import estimate_savings, compare_formats, count_tokens
+import dspy
+from pydantic import BaseModel
+from dspy_toon import ToonAdapter
 
-# Measure savings
-data = {"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]}
-result = estimate_savings(data)
-print(f"Saves {result['savings_percent']:.1f}% tokens")  # Saves 42.3% tokens
+class Person(BaseModel):
+    name: str
+    age: int
+    occupation: str
 
-# Visual comparison
-print(compare_formats(data))
-# Format Comparison
-# ────────────────────────────────────────────────
-# Format      Tokens    Size (chars)
-# JSON            45             123
-# TOON            28              85
-# ────────────────────────────────────────────────
-# Savings: 17 tokens (37.8%)
+class ExtractPeople(dspy.Signature):
+    """Extract all people mentioned in the text."""
+    text: str = dspy.InputField()
+    people: list[Person] = dspy.OutputField()
 
-# Count tokens directly
-toon_str = encode(data)
-tokens = count_tokens(toon_str)  # Uses tiktoken (gpt5/gpt5-mini)
+lm = dspy.LM("openai/gpt-4o-mini")
+dspy.configure(lm=lm, adapter=ToonAdapter())
+
+extractor = dspy.Predict(ExtractPeople)
+result = extractor(text="""
+    Alice (35) is a software engineer. Bob is 28 and works as a designer.
+    Carol, aged 42, is the project manager.
+""")
+
+# ToonAdapter uses tabular format for lists - saves 30%+ tokens
+for person in result.people:
+    print(f"{person.name}, {person.age}, {person.occupation}")
 ```
 
-**Requires tiktoken:** `uv add tiktoken` (benchmark features are optional)
+### Nested Models
 
-## Format Specification
+```python
+import dspy
+from pydantic import BaseModel, Field
+from typing import Literal
+from dspy_toon import ToonAdapter
 
-| Type | Example Input | TOON Output |
-|------|---------------|-------------|
-| **Object** | `{"name": "Alice", "age": 30}` | `name: Alice`<br>`age: 30` |
-| **Primitive Array** | `[1, 2, 3]` | `[3]: 1,2,3` |
-| **Tabular Array** | `[{"id": 1, "name": "A"}, {"id": 2, "name": "B"}]` | `[2,]{id,name}:`<br>&nbsp;&nbsp;`1,A`<br>&nbsp;&nbsp;`2,B` |
-| **Mixed Array** | `[{"x": 1}, 42, "hi"]` | `[3]:`<br>&nbsp;&nbsp;`- x: 1`<br>&nbsp;&nbsp;`- 42`<br>&nbsp;&nbsp;`- hi` |
+class Address(BaseModel):
+    street: str
+    city: str
+    country: Literal["US", "UK", "DE"]
 
-**Quoting:** Only when necessary (empty, keywords, numeric strings, whitespace, structural chars, delimiters)
+class UserProfile(BaseModel):
+    name: str = Field(description="Full name")
+    email: str = Field(description="Email address")
+    address: Address | None = Field(description="Home address")
 
-**Type Normalization:** `Infinity/NaN/Functions` → `null` • `Decimal` → `float` • `datetime` → ISO 8601 • `-0` → `0`
+class ExtractProfile(dspy.Signature):
+    """Extract user profile from text."""
+    text: str = dspy.InputField()
+    profile: UserProfile = dspy.OutputField()
 
-## Development
+lm = dspy.LM("openai/gpt-4o-mini")
+dspy.configure(lm=lm, adapter=ToonAdapter())
+
+extractor = dspy.Predict(ExtractProfile)
+result = extractor(text="Contact John at john@example.com. He lives at 123 Main St, Boston, US.")
+print(result.profile)
+```
+
+See the `examples/` directory for complete working examples.
+
+## 🧪 Development
 
 ```bash
-# Setup (requires uv: https://docs.astral.sh/uv/)
-git clone https://github.com/toon-format/toon-python.git
-cd toon-python
-uv sync
+# Clone repository
+git clone https://github.com/Archelunch/dspy-toon.git
+cd dspy-toon
 
-# Run tests (792 tests, 91% coverage, 85% enforced)
-uv run pytest --cov=toon_format --cov-report=term
+# Install with dev dependencies
+pip install -e ".[dev,benchmark]"
 
-# Code quality
-uv run ruff check src/ tests/        # Lint
-uv run ruff format src/ tests/       # Format
-uv run mypy src/                     # Type check
+# Run tests
+pytest tests/ -v
+
+# Run tests with coverage
+pytest tests/ --cov=dspy_toon --cov-report=term
+
+# Type checking
+mypy src/
+
+# Linting
+ruff check src/ tests/
+ruff format src/ tests/
 ```
 
-**CI/CD:** GitHub Actions • Python 3.8-3.14 • Coverage enforcement • PR coverage comments
+## 🗺️ Roadmap
 
-## Project Status & Roadmap
+- [x] Core ToonAdapter implementation
+- [x] Token usage benchmarks
+- [x] BAML adapter comparison benchmarks
+- [ ] Integration with DSPy optimizers (MIPROv2, BootstrapFewShot)
+- [ ] More benchmarks on complex data and optimizations
 
-Following semantic versioning towards 1.0.0:
+## 🤝 Contributing
 
-- **v0.8.x** - Initial code set, tests, documentation ✅
-- **v0.9.x** - Serializer improvements, spec compliance testing, publishing setup (current)
-- **v1.0.0-rc.x** - Release candidates for production readiness
-- **v1.0.0** - First stable release with full spec compliance
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+## 📄 License
 
-## Documentation
+MIT License
 
-- [📘 Full Documentation](docs/) - Complete guides and references
-- [🔧 API Reference](docs/api.md) - Detailed function documentation
-- [📋 Format Specification](docs/format.md) - TOON syntax and rules
-- [🤖 LLM Integration](docs/llm-integration.md) - Best practices for LLM usage
-- [📜 TOON Spec](https://github.com/toon-format/spec) - Official specification
-- [🐛 Issues](https://github.com/toon-format/toon-python/issues) - Bug reports and features
-- [🤝 Contributing](CONTRIBUTING.md) - Contribution guidelines
+## 🙏 Acknowledgments
 
-## Contributors
+- [DSPy](https://github.com/stanfordnlp/dspy) - The foundation framework
+- [TOON Format](https://github.com/toon-format/spec) - Original TOON specification
+- [toon-python](https://github.com/toon-format/toon-python) - Python TOON encoder/decoder
+- [BAML](https://github.com/BoundaryML/baml) - Inspiration for adapter approach
 
-- [Xavi Vinaixa](https://github.com/xaviviro)
-- [David Pirogov](https://github.com/davidpirogov)
-- [Justar](https://github.com/Justar96)
-- [Johann Schopplich](https://github.com/johannschopplich)
-
-## License
-
-MIT License – see [LICENSE](LICENSE) for details

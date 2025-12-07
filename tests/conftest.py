@@ -1,34 +1,108 @@
-"""Shared pytest fixtures for TOON format tests.
+# Copyright (c) 2025 dspy-toon
+# SPDX-License-Identifier: MIT
+"""Pytest configuration and fixtures."""
 
-This module provides reusable test data and fixtures following pytest best practices.
-"""
-
-from typing import Any, Dict, List
+from typing import Literal
 
 import pytest
+from pydantic import BaseModel, Field
+
+# =============================================================================
+# Simple Pydantic Models for Testing
+# =============================================================================
 
 
-# Simple test data fixtures
+class SimpleUser(BaseModel):
+    """Simple user model."""
+
+    name: str
+    age: int
+
+
+class UserWithDescription(BaseModel):
+    """User model with field descriptions."""
+
+    name: str = Field(description="Full name of the user")
+    age: int = Field(description="Age in years")
+    email: str = Field(description="Email address")
+
+
+class Address(BaseModel):
+    """Address model."""
+
+    street: str
+    city: str
+    country: Literal["US", "CA", "UK", "DE"]
+
+
+class UserWithAddress(BaseModel):
+    """User with nested address."""
+
+    name: str = Field(description="Full name")
+    age: int
+    address: Address | None = None
+
+
+class Product(BaseModel):
+    """Product model for tabular data."""
+
+    id: int
+    name: str
+    price: float
+    in_stock: bool
+
+
+class OrderItem(BaseModel):
+    """Order item with nested product reference."""
+
+    product_id: int
+    quantity: int
+    unit_price: float
+
+
+class Order(BaseModel):
+    """Complex order model."""
+
+    order_id: str
+    customer_name: str
+    items: list[OrderItem]
+    total: float
+    status: Literal["pending", "shipped", "delivered"]
+
+
+class SentimentResult(BaseModel):
+    """Sentiment analysis result."""
+
+    sentiment: Literal["positive", "negative", "neutral"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    key_phrases: list[str]
+
+
+class AnalysisResult(BaseModel):
+    """Complex analysis result with multiple fields."""
+
+    title: str
+    summary: str
+    sentiment: Literal["positive", "negative", "neutral"]
+    topics: list[str]
+    entities: list[dict]
+    confidence: float
+
+
+# =============================================================================
+# Fixtures
+# =============================================================================
+
+
 @pytest.fixture
-def simple_object() -> Dict[str, Any]:
-    """A simple object for basic encoding/decoding tests."""
-    return {"id": 123, "name": "Alice", "active": True}
+def simple_user_data():
+    """Simple user test data."""
+    return {"name": "Alice", "age": 30}
 
 
 @pytest.fixture
-def nested_object() -> Dict[str, Any]:
-    """A nested object structure for testing deep nesting."""
-    return {
-        "user": {
-            "id": 123,
-            "profile": {"name": "Alice", "city": "NYC"},
-        }
-    }
-
-
-@pytest.fixture
-def tabular_array() -> List[Dict[str, Any]]:
-    """Array of uniform objects suitable for tabular format."""
+def user_list_data():
+    """List of users for tabular format testing."""
     return [
         {"id": 1, "name": "Alice", "age": 30},
         {"id": 2, "name": "Bob", "age": 25},
@@ -37,86 +111,31 @@ def tabular_array() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def primitive_array() -> List[Any]:
-    """Array of primitive values for inline format."""
-    return [1, 2, 3, 4, 5]
+def nested_data():
+    """Nested object data."""
+    return {"user": {"name": "Alice", "settings": {"theme": "dark", "notifications": True}}}
 
 
 @pytest.fixture
-def mixed_array() -> List[Any]:
-    """Array with mixed types requiring list format."""
+def product_list():
+    """List of products for tabular testing."""
     return [
-        {"name": "Alice"},
-        42,
-        "hello",
-        True,
+        Product(id=1, name="Widget A", price=9.99, in_stock=True),
+        Product(id=2, name="Widget B", price=14.50, in_stock=True),
+        Product(id=3, name="Widget C", price=19.99, in_stock=False),
     ]
 
 
-# Parametrized delimiter fixture
-@pytest.fixture(params=[",", "\t", "|"])
-def delimiter(request) -> str:
-    """Parametrized fixture providing all three supported delimiters.
-
-    Returns comma, tab, or pipe delimiter.
-    """
-    return request.param
-
-
-# Edge case values
 @pytest.fixture
-def edge_case_values() -> Dict[str, Any]:
-    """Collection of edge case values for testing normalization."""
-    return {
-        "infinity": float("inf"),
-        "negative_infinity": float("-inf"),
-        "nan": float("nan"),
-        "negative_zero": -0.0,
-        "large_int": 9007199254740992,  # 2^53
-        "none": None,
-    }
-
-
-# Python-specific types
-@pytest.fixture
-def python_types() -> Dict[str, Any]:
-    """Python-specific types that need normalization."""
-    from decimal import Decimal
-
-    return {
-        "tuple": (1, 2, 3),
-        "set": {3, 1, 2},
-        "frozenset": frozenset([3, 1, 2]),
-        "decimal": Decimal("3.14"),
-    }
-
-
-# Options fixtures
-@pytest.fixture
-def encode_options_comma() -> Dict[str, Any]:
-    """Encode options with comma delimiter."""
-    return {"delimiter": ",", "indent": 2}
-
-
-@pytest.fixture
-def encode_options_tab() -> Dict[str, Any]:
-    """Encode options with tab delimiter."""
-    return {"delimiter": "\t", "indent": 2}
-
-
-@pytest.fixture
-def encode_options_pipe() -> Dict[str, Any]:
-    """Encode options with pipe delimiter."""
-    return {"delimiter": "|", "indent": 2}
-
-
-@pytest.fixture
-def decode_options_strict() -> Dict[str, bool]:
-    """Decode options with strict mode enabled."""
-    return {"strict": True}
-
-
-@pytest.fixture
-def decode_options_lenient() -> Dict[str, bool]:
-    """Decode options with strict mode disabled."""
-    return {"strict": False}
+def complex_order():
+    """Complex order data."""
+    return Order(
+        order_id="ORD-001",
+        customer_name="John Doe",
+        items=[
+            OrderItem(product_id=1, quantity=2, unit_price=9.99),
+            OrderItem(product_id=2, quantity=1, unit_price=14.50),
+        ],
+        total=34.48,
+        status="pending",
+    )

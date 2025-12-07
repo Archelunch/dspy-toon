@@ -1,106 +1,121 @@
-# Contributing to toon-python
+# Contributing to DSPy-TOON
 
-Thank you for your interest in contributing to the official Python implementation of TOON!
+Thank you for your interest in contributing to DSPy-TOON! This document provides guidelines and instructions for contributing.
 
-## Project Setup
+## Development Setup
 
-This project uses [`uv`](https://github.com/astral-sh/uv) for dependency management.
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/Archelunch/dspy-toon.git
+   cd dspy-toon
+   ```
+
+2. **Create a virtual environment**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install development dependencies**
+
+   ```bash
+   pip install -e ".[dev,benchmark]"
+   ```
+
+## Code Quality
+
+### Linting
+
+We use `ruff` for linting and formatting:
 
 ```bash
-# Clone the repository
-git clone https://github.com/toon-format/toon-python.git
-cd toon-python
+# Check for issues
+ruff check src/ tests/
 
-# Install dependencies (uv will create a virtual environment automatically)
-uv sync
+# Auto-fix issues
+ruff check --fix src/ tests/
 
-# Run tests
-uv run pytest
-
-# Run tests with coverage
-uv run pytest --cov=src/toon_format --cov-report=term-missing
+# Format code
+ruff format src/ tests/
 ```
 
-## Development Workflow
+### Type Checking
 
-1. **Fork the repository** and create a feature branch
-2. **Make your changes** following the coding standards below
-3. **Add tests** for any new functionality
-4. **Ensure all tests pass** and coverage remains high
-5. **Submit a pull request** with a clear description
+We use `mypy` for type checking:
 
-## Coding Standards
-
-### Python Version Support
-
-We support Python 3.8 and above (including Python 3.13 and 3.14).
-
-### Type Safety
-
-- All code must include type hints
-- Run `mypy` before committing:
-  ```bash
-  uv run mypy src/
-  ```
-
-### Code Style
-
-- We use `ruff` for linting and formatting
-- Run before committing:
-  ```bash
-  uv run ruff check src/ tests/
-  uv run ruff format src/ tests/
-  ```
+```bash
+mypy src/
+```
 
 ### Testing
 
-- All new features must include tests
-- Maintain test coverage at **85%+ line coverage**
-- Tests should cover edge cases and spec compliance
-- Run the full test suite:
-  ```bash
-  uv run pytest tests/
+We use `pytest` for testing:
 
-  # Run with coverage report
-  uv run pytest --cov=toon_format --cov-report=term --cov-fail-under=85
-  ```
+```bash
+# Run all tests
+pytest tests/ -v
 
-## SPEC Compliance
+# Run with coverage
+pytest tests/ --cov=dspy_toon --cov-report=term
 
-All implementations must comply with the [TOON specification](https://github.com/toon-format/spec/blob/main/SPEC.md).
+# Run specific test file
+pytest tests/test_adapter.py -v
+```
 
-Before submitting changes that affect encoding/decoding behavior:
-1. Verify against the official SPEC.md
-2. Add tests for the specific spec sections you're implementing
-3. Document any spec version requirements
+## Pull Request Process
 
-## Pull Request Guidelines
+1. **Fork the repository** and create your branch from `main`
 
-- **Title**: Use a clear, descriptive title
-- **Description**: Explain what changes you made and why
-- **Tests**: Include tests for your changes
-- **Documentation**: Update README or documentation if needed
-- **Commits**: Use clear commit messages ([Conventional Commits](https://www.conventionalcommits.org/) preferred)
+2. **Make your changes** following the code style guidelines
 
-Your pull request will use our standard template which guides you through the required information.
+3. **Add tests** for any new functionality
 
-## Communication
+4. **Update documentation** if needed
 
-- **GitHub Issues**: For bug reports and feature requests
-- **GitHub Discussions**: For questions and general discussion
-- **Pull Requests**: For code reviews and implementation discussion
+5. **Run the test suite** to ensure nothing is broken
 
-## Maintainers
+6. **Submit a pull request** with a clear description of your changes
 
-This is a collaborative project. Current maintainers:
+## Commit Messages
 
-- [@xaviviro](https://github.com/xaviviro)
-- [@davidpirogov](https://github.com/davidpirogov)
-- [@bpradana](https://github.com/bpradana)
-- [@Justar96](https://github.com/Justar96)
+Please use clear, descriptive commit messages:
 
-All maintainers have equal and consensual decision-making power. For major architectural decisions, please open a discussion issue first.
+- `feat: Add support for custom delimiters`
+- `fix: Handle edge case in tabular array parsing`
+- `docs: Update README with new examples`
+- `test: Add tests for nested model encoding`
+- `refactor: Simplify TOON encoder logic`
 
-## License
+## Code Style
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+- Follow PEP 8 guidelines
+- Use type hints for function signatures
+- Write docstrings for public functions and classes
+- Keep functions focused and reasonably sized
+
+## Reporting Issues
+
+When reporting issues, please include:
+
+1. **Python version** and **DSPy version**
+2. **Minimal reproducible example**
+3. **Expected behavior** vs **actual behavior**
+4. **Full error traceback** if applicable
+
+## Feature Requests
+
+Feature requests are welcome! Please:
+
+1. Check existing issues to avoid duplicates
+2. Clearly describe the use case
+3. Explain why this would be valuable
+
+## Questions?
+
+Feel free to open an issue for questions or discussions about the project.
+
+---
+
+Thank you for contributing! 🙏

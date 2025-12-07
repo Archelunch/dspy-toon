@@ -5,23 +5,18 @@ on:
     types: [published]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
-    name: Build distribution
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
-      - name: Install build dependencies
+      - name: Install build tools
         run: |
           python -m pip install --upgrade pip
           pip install build twine
@@ -32,52 +27,28 @@ jobs:
       - name: Check package
         run: twine check dist/*
 
-      - name: Store distribution packages
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
 
-  publish-to-pypi:
-    name: Publish to PyPI
-    if: github.event_name == 'release' && github.event.action == 'published'
+  publish-pypi:
     needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'release'
     environment:
       name: pypi
-      url: https://pypi.org/p/toon_format
+      url: https://pypi.org/p/dspy-toon
     permissions:
       id-token: write
 
     steps:
-      - name: Download distributions
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-to-testpypi:
-    name: Publish to TestPyPI
-    if: github.event_name == 'workflow_dispatch'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/toon_format
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Download distributions
-        uses: actions/download-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
