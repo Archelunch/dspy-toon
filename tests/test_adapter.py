@@ -491,3 +491,134 @@ class TestParseErrorHandling:
 
         assert "answer" in result
         assert "This is the answer" in result["answer"]
+
+
+# =============================================================================
+# Test TOON Format Compliance
+# =============================================================================
+
+
+class TestToonFormatCompliance:
+    """Tests for TOON format compliance.
+
+    TOON spec requires:
+    - Field names directly concatenated with [COUNT] for arrays: fieldname[COUNT]: ...
+    - Tabular format: fieldname[COUNT,]{field1,field2}: ...
+    - No duplicate "or null" patterns
+    """
+
+    def test_primitive_array_format(self):
+        """Test that primitive arrays use TOON format: fieldname[COUNT]: values."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class ModelWithStringList(BaseModel):
+            names: list[str]
+
+        schema = _build_toon_schema(ModelWithStringList)
+        # Should be "names[COUNT]: string,..." not "names: [COUNT]: string,..."
+        assert "names[COUNT]:" in schema
+        assert "names: [COUNT]" not in schema
+
+    def test_optional_primitive_array_format(self):
+        """Test that optional primitive arrays use correct format."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class ModelWithOptionalList(BaseModel):
+            tags: list[str] | None = None
+
+        schema = _build_toon_schema(ModelWithOptionalList)
+        # Should have field name directly before [COUNT]
+        assert "tags[COUNT]:" in schema
+        assert "or null" in schema
+        # Should not have double "or null"
+        assert "null or null" not in schema
+
+    def test_tabular_array_format(self):
+        """Test that object arrays use TOON tabular format: fieldname[COUNT,]{fields}."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class Item(BaseModel):
+            id: int
+            name: str
+
+        class ModelWithObjectList(BaseModel):
+            items: list[Item]
+
+        schema = _build_toon_schema(ModelWithObjectList)
+        # Should be "items[COUNT,]{id,name}:" not "items: [COUNT]{id,name}:"
+        assert "items[COUNT,]{id,name}:" in schema
+        assert "items:" not in schema.split("\n")[0]  # First line shouldn't be "items:"
+
+    def test_optional_tabular_array_format(self):
+        """Test that optional object arrays use correct format."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class Allergy(BaseModel):
+            substance: str
+
+        class Patient(BaseModel):
+            allergies: list[Allergy] | None = None
+
+        schema = _build_toon_schema(Patient)
+        # Should have field name directly before [COUNT,]
+        assert "allergies[COUNT,]{substance}:" in schema
+        assert "or null" in schema
+
+    def test_no_duplicate_or_null(self):
+        """Test that there are no duplicate 'or null' patterns."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class Address(BaseModel):
+            line: str | None = None
+            country: Literal["US", "CA"] | None = None
+
+        schema = _build_toon_schema(Address)
+        # Should not have "or null or null"
+        assert "null or null" not in schema
+        # Each field should have exactly one "or null"
+        lines = [ln for ln in schema.split("\n") if ln.strip()]
+        for line in lines:
+            if "or null" in line:
+                # Count occurrences
+                count = line.count("or null")
+                assert count == 1, f"Found {count} 'or null' in: {line}"
+
+    def test_nested_model_with_arrays(self):
+        """Test complex nested model with arrays."""
+        from dspy_toon.adapter import _build_toon_schema
+
+        class Name(BaseModel):
+            family: str | None = None
+            given: list[str] | None = None
+
+        class Patient(BaseModel):
+            name: Name | None = None
+            age: int | None = None
+
+        schema = _build_toon_schema(Patient)
+        # Check array format in nested model
+        assert "given[COUNT]:" in schema
+        # No duplicate nulls
+        assert "null or null" not in schema
+
+    def test_output_schema_primitive_array(self):
+        """Test _get_output_schema for primitive arrays."""
+        from dspy_toon.adapter import _get_output_schema
+
+        result = _get_output_schema("tags", list[str])
+        # Should be "tags[3]: val1,val2,val3" not "tags: [3]: val1,val2,val3"
+        assert "tags[3]:" in result
+        assert "tags: [3]" not in result
+
+    def test_output_schema_object_array(self):
+        """Test _get_output_schema for object arrays."""
+        from dspy_toon.adapter import _get_output_schema
+
+        class Item(BaseModel):
+            id: int
+            name: str
+
+        result = _get_output_schema("items", list[Item])
+        # Should be "items[2,]{id,name}:" format
+        assert "items[2,]{id,name}:" in result
+        assert "items:" not in result.split("\n")[0]

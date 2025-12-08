@@ -34,8 +34,21 @@ def _render_type_str(
     depth: int = 0,
     indent: int = 0,
     seen_models: set[type] | None = None,
+    field_name: str | None = None,
 ) -> str:
-    """Recursively renders a type annotation into TOON-like schema string."""
+    """Recursively renders a type annotation into TOON-like schema string.
+
+    Args:
+        annotation: The type annotation to render.
+        depth: Current recursion depth.
+        indent: Current indentation level.
+        seen_models: Set of already processed models to prevent recursion.
+        field_name: Optional field name for array types (TOON requires field name
+                   to be directly concatenated with [COUNT]).
+
+    Returns:
+        TOON-formatted type string.
+    """
     # Primitive types
     if annotation is str:
         return "string"
@@ -56,11 +69,31 @@ def _render_type_str(
     except Exception:
         return str(annotation)
 
-    # Optional[T] or T | None
+    # Optional[T] or T | None - handle nullable arrays specially
     if origin in (types.UnionType, Union):
         non_none_args = [arg for arg in args if arg is not type(None)]
-        type_render = " or ".join([_render_type_str(arg, depth + 1, indent, seen_models) for arg in non_none_args])
-        if len(non_none_args) < len(args):
+        is_nullable = len(non_none_args) < len(args)
+
+        # For single-type optionals with arrays, pass field_name through
+        if len(non_none_args) == 1:
+            inner_origin = get_origin(non_none_args[0])
+            if inner_origin is list and field_name:
+                type_render = _render_type_str(non_none_args[0], depth + 1, indent, seen_models, field_name)
+                if is_nullable:
+                    return f"{type_render} or null"
+                return type_render
+
+        # Render each non-None type, avoiding duplicate "or null" patterns
+        rendered_parts = []
+        for arg in non_none_args:
+            rendered = _render_type_str(arg, depth + 1, indent, seen_models)
+            # Avoid adding types that already end with "or null" when we'll add it later
+            if is_nullable and rendered.endswith(" or null"):
+                rendered = rendered[: -len(" or null")]
+            rendered_parts.append(rendered)
+
+        type_render = " or ".join(rendered_parts)
+        if is_nullable:
             return f"{type_render} or null"
         return type_render
 
@@ -68,16 +101,21 @@ def _render_type_str(
     if origin is Literal:
         return " or ".join(f'"{arg}"' for arg in args)
 
-    # list[T]
+    # list[T] - TOON format: fieldname[COUNT]: values or fieldname[COUNT,]{fields}:
     if origin is list:
         inner_type = args[0] if args else Any
+        name_prefix = f"{field_name}" if field_name else ""
+
         if inspect.isclass(inner_type) and issubclass(inner_type, BaseModel):
             fields = list(inner_type.model_fields.keys())
             fields_str = ",".join(fields)
-            return f"[COUNT]{{{fields_str}}}:\n  value1,value2,...\n  (one row per item, COUNT = number of items)"
+            # Tabular format: fieldname[COUNT,]{field1,field2,...}:
+            header = f"{name_prefix}[COUNT,]{{{fields_str}}}:"
+            return f"{header}\n  value1,value2,...\n  (one row per item, COUNT = number of items)"
         else:
             inner_str = _render_type_str(inner_type, depth + 1, indent, seen_models)
-            return f"[COUNT]: {inner_str},... (COUNT = num items)"
+            # Primitive array format: fieldname[COUNT]: type,...
+            return f"{name_prefix}[COUNT]: {inner_str},... (COUNT = num items)"
 
     # dict[K, V]
     if origin is dict:
@@ -89,6 +127,20 @@ def _render_type_str(
     if hasattr(annotation, "__name__"):
         return annotation.__name__
     return str(annotation)
+
+
+def _is_array_type(annotation: Any) -> bool:
+    """Check if annotation is a list type or Optional[list[...]]."""
+    origin = get_origin(annotation)
+    if origin is list:
+        return True
+    # Check for Optional[list[...]]
+    if origin in (types.UnionType, Union):
+        args = get_args(annotation)
+        non_none_args = [arg for arg in args if arg is not type(None)]
+        if len(non_none_args) == 1:
+            return get_origin(non_none_args[0]) is list
+    return False
 
 
 def _build_toon_schema(
@@ -111,14 +163,29 @@ def _build_toon_schema(
         if field.description:
             lines.append(f"{current_indent}{COMMENT_SYMBOL} {field.description}")
 
-        rendered_type = _render_type_str(field.annotation, indent=indent + 1, seen_models=seen_models)
-
-        if "\n" in rendered_type:
-            lines.append(f"{current_indent}{name}:")
-            for line in rendered_type.split("\n"):
-                lines.append(f"{current_indent}  {line}")
+        # For array types, pass field_name so it's concatenated directly with [COUNT]
+        if _is_array_type(field.annotation):
+            rendered_type = _render_type_str(
+                field.annotation, indent=indent + 1, seen_models=seen_models, field_name=name
+            )
+            if "\n" in rendered_type:
+                # First line has field name already (e.g., "items[COUNT,]{...}:")
+                type_lines = rendered_type.split("\n")
+                lines.append(f"{current_indent}{type_lines[0]}")
+                for line in type_lines[1:]:
+                    lines.append(f"{current_indent}  {line}")
+            else:
+                # Single line array (e.g., "items[COUNT]: string,...")
+                lines.append(f"{current_indent}{rendered_type}")
         else:
-            lines.append(f"{current_indent}{name}: {rendered_type}")
+            rendered_type = _render_type_str(field.annotation, indent=indent + 1, seen_models=seen_models)
+
+            if "\n" in rendered_type:
+                lines.append(f"{current_indent}{name}:")
+                for line in rendered_type.split("\n"):
+                    lines.append(f"{current_indent}  {line}")
+            else:
+                lines.append(f"{current_indent}{name}: {rendered_type}")
 
     return "\n".join(lines)
 
@@ -128,15 +195,24 @@ def _get_output_schema(field_name: str, field_type: Any) -> str:
     origin = get_origin(field_type)
     args = get_args(field_type)
 
+    # Handle Optional types - unwrap to get inner type
+    if origin in (types.UnionType, Union):
+        non_none_args = [arg for arg in args if arg is not type(None)]
+        if len(non_none_args) == 1:
+            inner_origin = get_origin(non_none_args[0])
+            inner_args = get_args(non_none_args[0])
+            if inner_origin is list:
+                origin = list
+                args = inner_args
+
     # List of Pydantic models -> tabular format
     if origin is list and args:
         inner_type = args[0]
         if inspect.isclass(inner_type) and issubclass(inner_type, BaseModel):
             fields = list(inner_type.model_fields.keys())
             fields_str = ",".join(fields)
-            # Show example with actual count
-            return f"""{field_name}:
-[2]{{{fields_str}}}:
+            # TOON tabular format: fieldname[COUNT,]{fields}:
+            return f"""{field_name}[2,]{{{fields_str}}}:
   Alice,35,engineer
   Bob,28,designer
 (Replace 2 with actual count, add one row per item)"""
@@ -146,9 +222,9 @@ def _get_output_schema(field_name: str, field_type: Any) -> str:
         schema = _build_toon_schema(field_type, indent=1)
         return f"{field_name}:\n{schema}"
 
-    # List of primitives
+    # List of primitives - TOON format: fieldname[COUNT]: values
     if origin is list:
-        return f"{field_name}: [3]: val1,val2,val3 (replace 3 with actual count)"
+        return f"{field_name}[3]: val1,val2,val3 (replace 3 with actual count)"
 
     # Simple types
     return f"{field_name}: {_render_type_str(field_type)}"

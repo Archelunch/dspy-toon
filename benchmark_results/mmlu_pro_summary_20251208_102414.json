@@ -1,0 +1,107 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "timestamp": "2025-12-08T10:15:26.902489",
+  "n_questions": 200,
+  "adapters": [
+    {
+      "name": "ToonAdapter",
+      "accuracy": 66.5,
+      "total_correct": 133,
+      "total_questions": 200,
+      "total_input_tokens": 79885,
+      "total_output_tokens": 12705,
+      "total_tokens": 92590,
+      "category_accuracy": {
+        "math": 71.42857142857143,
+        "health": 100.0,
+        "physics": 78.57142857142857,
+        "business": 40.0,
+        "biology": 86.66666666666667,
+        "chemistry": 60.0,
+        "computer science": 80.0,
+        "economics": 78.57142857142857,
+        "engineering": 50.0,
+        "philosophy": 57.14285714285714,
+        "other": 64.28571428571429,
+        "history": 42.857142857142854,
+        "psychology": 71.42857142857143,
+        "law": 50.0
+      }
+    },
+    {
+      "name": "BAMLAdapter",
+      "accuracy": 62.0,
+      "total_correct": 124,
+      "total_questions": 200,
+      "total_input_tokens": 78971,
+      "total_output_tokens": 3742,
+      "total_tokens": 82713,
+      "category_accuracy": {
+        "math": 78.57142857142857,
+        "health": 100.0,
+        "physics": 57.14285714285714,
+        "business": 33.33333333333333,
+        "biology": 86.66666666666667,
+        "chemistry": 46.666666666666664,
+        "computer science": 73.33333333333333,
+        "economics": 64.28571428571429,
+        "engineering": 35.714285714285715,
+        "philosophy": 64.28571428571429,
+        "other": 71.42857142857143,
+        "history": 50.0,
+        "psychology": 57.14285714285714,
+        "law": 50.0
+      }
+    },
+    {
+      "name": "JSONAdapter",
+      "accuracy": 64.0,
+      "total_correct": 128,
+      "total_questions": 200,
+      "total_input_tokens": 90771,
+      "total_output_tokens": 4000,
+      "total_tokens": 94771,
+      "category_accuracy": {
+        "math": 71.42857142857143,
+        "health": 92.85714285714286,
+        "physics": 57.14285714285714,
+        "business": 33.33333333333333,
+        "biology": 86.66666666666667,
+        "chemistry": 46.666666666666664,
+        "computer science": 73.33333333333333,
+        "economics": 78.57142857142857,
+        "engineering": 57.14285714285714,
+        "philosophy": 50.0,
+        "other": 71.42857142857143,
+        "history": 57.14285714285714,
+        "psychology": 71.42857142857143,
+        "law": 50.0
+      }
+    },
+    {
+      "name": "ChatAdapter",
+      "accuracy": 63.5,
+      "total_correct": 127,
+      "total_questions": 200,
+      "total_input_tokens": 89371,
+      "total_output_tokens": 4133,
+      "total_tokens": 93504,
+      "category_accuracy": {
+        "math": 64.28571428571429,
+        "health": 85.71428571428571,
+        "physics": 78.57142857142857,
+        "business": 46.666666666666664,
+        "biology": 86.66666666666667,
+        "chemistry": 53.333333333333336,
+        "computer science": 80.0,
+        "economics": 71.42857142857143,
+        "engineering": 42.857142857142854,
+        "philosophy": 57.14285714285714,
+        "other": 64.28571428571429,
+        "history": 42.857142857142854,
+        "psychology": 64.28571428571429,
+        "law": 50.0
+      }
+    }
+  ]
+}

@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.10,<3.15"
 dependencies = [
+    "datasets>=4.4.1",
     "dspy>=2.5.0",
     "pydantic>=2.0.0",
 ]
@@ -50,6 +51,7 @@ benchmark = [
     "tiktoken>=0.4.0",
     "pandas>=2.0.0",
     "tabulate>=0.9.0",
+    "datasets>=2.0.0",
 ]
 dev = [
     "pytest>=8.0.0",
