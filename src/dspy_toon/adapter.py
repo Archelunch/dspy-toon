@@ -109,8 +109,9 @@ def _render_type_str(
         if inspect.isclass(inner_type) and issubclass(inner_type, BaseModel):
             fields = list(inner_type.model_fields.keys())
             fields_str = ",".join(fields)
-            # Tabular format: fieldname[COUNT,]{field1,field2,...}:
-            header = f"{name_prefix}[COUNT,]{{{fields_str}}}:"
+            # Tabular format: fieldname[COUNT]{field1,field2,...}:
+            # Note: comma delimiter is implicit (default) per TOON spec, so not shown in [N]
+            header = f"{name_prefix}[COUNT]{{{fields_str}}}:"
             return f"{header}\n  value1,value2,...\n  (one row per item, COUNT = number of items)"
         else:
             inner_str = _render_type_str(inner_type, depth + 1, indent, seen_models)
@@ -211,8 +212,9 @@ def _get_output_schema(field_name: str, field_type: Any) -> str:
         if inspect.isclass(inner_type) and issubclass(inner_type, BaseModel):
             fields = list(inner_type.model_fields.keys())
             fields_str = ",".join(fields)
-            # TOON tabular format: fieldname[COUNT,]{fields}:
-            return f"""{field_name}[2,]{{{fields_str}}}:
+            # TOON tabular format: fieldname[COUNT]{fields}:
+            # Note: comma delimiter is implicit (default), not shown in [N]
+            return f"""{field_name}[2]{{{fields_str}}}:
   Alice,35,engineer
   Bob,28,designer
 (Replace 2 with actual count, add one row per item)"""

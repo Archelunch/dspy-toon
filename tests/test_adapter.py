@@ -534,7 +534,7 @@ class TestToonFormatCompliance:
         assert "null or null" not in schema
 
     def test_tabular_array_format(self):
-        """Test that object arrays use TOON tabular format: fieldname[COUNT,]{fields}."""
+        """Test that object arrays use TOON tabular format: fieldname[COUNT]{fields}."""
         from dspy_toon.adapter import _build_toon_schema
 
         class Item(BaseModel):
@@ -545,8 +545,9 @@ class TestToonFormatCompliance:
             items: list[Item]
 
         schema = _build_toon_schema(ModelWithObjectList)
-        # Should be "items[COUNT,]{id,name}:" not "items: [COUNT]{id,name}:"
-        assert "items[COUNT,]{id,name}:" in schema
+        # Should be "items[COUNT]{id,name}:" not "items: [COUNT]{id,name}:"
+        # Note: comma delimiter is implicit (default), not shown in [N]
+        assert "items[COUNT]{id,name}:" in schema
         assert "items:" not in schema.split("\n")[0]  # First line shouldn't be "items:"
 
     def test_optional_tabular_array_format(self):
@@ -560,8 +561,9 @@ class TestToonFormatCompliance:
             allergies: list[Allergy] | None = None
 
         schema = _build_toon_schema(Patient)
-        # Should have field name directly before [COUNT,]
-        assert "allergies[COUNT,]{substance}:" in schema
+        # Should have field name directly before [COUNT]
+        # Note: comma delimiter is implicit (default), not shown in [N]
+        assert "allergies[COUNT]{substance}:" in schema
         assert "or null" in schema
 
     def test_no_duplicate_or_null(self):
@@ -619,6 +621,6 @@ class TestToonFormatCompliance:
             name: str
 
         result = _get_output_schema("items", list[Item])
-        # Should be "items[2,]{id,name}:" format
-        assert "items[2,]{id,name}:" in result
+        # Should be "items[2]{id,name}:" format (no comma - it's implicit)
+        assert "items[2]{id,name}:" in result
         assert "items:" not in result.split("\n")[0]
