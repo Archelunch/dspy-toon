@@ -1,0 +1,73 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "reflection_model": "gemini/gemini-2.5-pro",
+  "timestamp": "2025-12-08T15:29:21.326173",
+  "n_train": 100,
+  "n_val": 70,
+  "adapters": [
+    {
+      "name": "ChatAdapter",
+      "baseline": {
+        "accuracy": 64.29,
+        "total_correct": 45,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 68.57,
+        "total_correct": 47,
+        "total_questions": 70
+      },
+      "accuracy_boost": 4.279999999999987,
+      "optimization_time_seconds": 628.052613,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_ChatAdapter_20251208_152921.json"
+    },
+    {
+      "name": "JSONAdapter",
+      "baseline": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "accuracy_boost": 0.0,
+      "optimization_time_seconds": 488.173331,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_JSONAdapter_20251208_152921.json"
+    },
+    {
+      "name": "BAMLAdapter",
+      "baseline": {
+        "accuracy": 62.86,
+        "total_correct": 44,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "accuracy_boost": 4.280000000000001,
+      "optimization_time_seconds": 490.063862,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_BAMLAdapter_20251208_152921.json"
+    },
+    {
+      "name": "ToonAdapter",
+      "baseline": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 81.43,
+        "total_correct": 57,
+        "total_questions": 70
+      },
+      "accuracy_boost": 14.290000000000006,
+      "optimization_time_seconds": 1942.866477,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_ToonAdapter_20251208_152921.json"
+    }
+  ]
+}

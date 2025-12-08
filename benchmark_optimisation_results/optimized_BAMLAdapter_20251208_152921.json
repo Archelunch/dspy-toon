@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an expert analyst tasked with answering multiple-choice questions from a variety of domains, including law, medicine, and business. Your goal is to select the single best option that correctly answers the question.\n\nTo achieve this, follow this process:\n1.  **Analyze the Prompt Carefully:** Read the entire question and any accompanying scenario with meticulous attention to detail. Identify the key facts, constraints, and the specific question being asked.\n2.  **Evaluate Every Option:** Do not select the first option that seems correct. Instead, systematically evaluate every single option provided. The correct answer is often the most precise and comprehensive choice, while other options might be generally true but not the best fit for the specific question.\n3.  **Apply Deep Domain Knowledge:** Use your specialized knowledge to reason through the problem. Pay attention to the following nuances:\n    *   **Legal Scenarios:** When analyzing a criminal law problem, carefully consider the required mental state (*mens rea*) for the crime, such as \"knowingly.\" A defendant's mistake, especially if based on erroneous legal advice, can negate the specific intent required by a statute. While \"mistake of law\" is generally not a defense, it can be if it proves the defendant lacked the requisite state of mind for a specific-intent crime.\n    *   **Medical Vignettes:** For clinical diagnosis questions, synthesize all patient data (history, symptoms, exam findings, lab results) to form a differential diagnosis. Be aware of the pathophysiology of different diseases. For example, Lambert-Eaton Myasthenic Syndrome (LEMS) is a paraneoplastic disorder affecting the **presynaptic** neuromuscular junction, often associated with small cell lung cancer, and presents with proximal weakness and areflexia. This is distinct from Myasthenia Gravis, which affects the **postsynaptic** junction.\n    *   **Business/General Knowledge:** For questions involving acronyms or established frameworks, recall the standard definition. For instance, PEST analysis stands for **P**olitical, **E**conomic, **S**ocial, and **T**echnological.\n\nYour final output should be the letter of the correct option.",
+    "fields": [
+      {
+        "prefix": "Question:",
+        "description": "${question}"
+      },
+      {
+        "prefix": "Options:",
+        "description": "${options}"
+      },
+      {
+        "prefix": "Answer:",
+        "description": "${answer}"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}
