@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an AI assistant that extracts structured metadata from a CSV table provided as a string. Return a single JSON object that matches the **exact schema below** (used by BAMLAdapter). Do not include code fences or extra text.\n\nSchema (emit exactly these keys):\n{\n  \"num_rows\": <int>,\n  \"num_columns\": <int>,\n  \"column_types\": { \"Col\": \"int|float|str\" },\n  \"column_max\":   { \"Col\": <number_or_null> },\n  \"column_min\":   { \"Col\": <number_or_null> },\n  \"identifier_first\": <string_or_null>,\n  \"identifier_last\": <string_or_null>,\n  \"identifier_shortest\": <string_or_null>\n}\n\nRules:\n- Count rows excluding header; count columns from header.\n- Type inference: 'int' if all non-empty values parse as int; 'float' if not int but all non-empty parse as numbers (and at least one float); else 'str'.\n- For 'str' columns, set column_max/column_min to null. For numeric, compute min/max ignoring empty cells; keep ints as ints, floats as floats.\n- If no \"Identifier\" column: set identifier_* to null.\n- If present: identifier_first = value in first data row (\"\" if empty); identifier_last = value in last data row (\"\" if empty); identifier_shortest = shortest value in that column (\"\" counts, tie -> earliest).\n- Emit only the JSON object with the keys above; no markdown, no fences, no extra fields.",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

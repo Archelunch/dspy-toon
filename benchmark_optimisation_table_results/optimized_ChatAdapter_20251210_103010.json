@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an assistant that extracts structured metadata from a CSV table.\n\n**Task:**\nGiven a multi-line string representing a CSV table (with a header row), you must parse it and extract a structured metadata object, outputting it as a single line string.\n\n**Instructions:**\n\n1.  **Parse the Input CSV:**\n    *   The input is a single multi-line string.\n    *   The first line is the header row containing comma-separated column names.\n    *   All subsequent lines are data rows.\n    *   Fields are separated by a single comma. An empty field (e.g., `value1,,value3` or a trailing comma like `value1,`) represents a missing or empty value.\n    *   **Crucially**, you must correctly map data to headers. The first value in a data row corresponds to the first header, the second value to the second header, and so on.\n\n2.  **Calculate Basic Metadata:**\n    *   `num_rows`: The total count of data rows (all lines after the header).\n    *   `num_columns`: The total count of columns (the number of names in the header row).\n\n3.  **Analyze Each Column:**\n    For each column identified in the header, perform the following analysis:\n\n    *   **Step A: Infer Data Type:**\n        Scan all **non-empty** values in the column to determine its type. Missing/empty values are **ignored** during this step. The type must be one of `int`, `float`, or `str`. Apply these rules in order:\n        1.  If **any** non-empty value cannot be parsed as a number (e.g., \"abc\", \"y wRl i-426\"), the column type is `str`.\n        2.  If all non-empty values are numeric, check if **at least one** has a non-zero fractional part (e.g., `-140.009499`, but not `9331.0`). If so, the column type is `float`.\n        3.  If all non-empty values are numeric and all can be represented as integers (including those written as `9331.0`), the column type is `int`.\n\n    *   **Step B: Calculate Min/Max:**\n        *   If the column type is `str`, the `min` and `max` values are not applicable; set them to `None`.\n        *   If the column type is `int` or `float`:\n            *   Find the minimum and maximum numerical values from the **non-empty** data in that column. For example, for the values `[236.34, -463.35, -1731.97]`, the minimum is `-1731.97` and the maximum is `236.34`.\n            *   **Important Formatting:** In the final output, format all numerical min/max values as floats (e.g., an integer `8143` must be output as `8143.0`).\n\n4.  **Process the 'Identifier' Column (Special Case):**\n    *   **Check for Existence:** First, check if a column with the **exact header name** `Identifier` exists.\n    *   **If 'Identifier' column is MISSING:** Set the values for `identifier_first`, `identifier_last`, and `identifier_shortest` all to `None`.\n    *   **If 'Identifier' column EXISTS:**\n        *   `identifier_first`: The value from the 'Identifier' column in the **first data row**. If the field is empty (e.g., `value1,`), this value is an empty string (`''`).\n        *   `identifier_last`: The value from the 'Identifier' column in the **last data row**. This can also be an empty string.\n        *   `identifier_shortest`: Find the value in the 'Identifier' column with the shortest string length. Iterate through all values in this column, including empty strings, and find the one with the minimum `len()`. An empty string (`''`) has a length of 0.\n\n5.  **Format the Output:**\n    *   Combine all the extracted information into a single line string.\n    *   Use the exact format shown in the template below.\n    *   **Crucially:** The keys in the dictionaries (`column_types`, `column_max`, `column_min`) **must be sorted alphabetically** for consistent output.\n    *   Use the Python keyword `None` for null or not-applicable values.\n    *   Do not return any other text, explanations, or code.\n\n**Output Format Template:**\n```\nnum_rows=... num_columns=... column_types={...} column_max={...} column_min={...} identifier_first=... identifier_last=... identifier_shortest=...\n```\n**Example of a correctly sorted dictionary format:** `{'Alpha': 'float', 'Beta': 'str', 'Gamma': 'int'}`",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

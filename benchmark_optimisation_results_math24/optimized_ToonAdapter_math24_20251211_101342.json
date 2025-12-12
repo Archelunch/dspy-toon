@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "Generate Math 24 solutions and solvability flag.",
+    "fields": [
+      {
+        "prefix": "Numbers:",
+        "description": "Four numbers that may form 24"
+      },
+      {
+        "prefix": "Solutions:",
+        "description": "Valid expressions that evaluate to 24"
+      },
+      {
+        "prefix": "Solvable:",
+        "description": "Whether any solution exists"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

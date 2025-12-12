@@ -1,0 +1,73 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "reflection_model": "gemini/gemini-2.5-pro",
+  "timestamp": "2025-12-11T10:09:26.873226",
+  "n_train": 100,
+  "n_val": 70,
+  "adapters": [
+    {
+      "name": "ToonAdapter",
+      "baseline": {
+        "accuracy": 64.29,
+        "total_correct": 45,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 82.86,
+        "total_correct": 58,
+        "total_questions": 70
+      },
+      "accuracy_boost": 18.569999999999993,
+      "optimization_time_seconds": 3136.068169,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_ToonAdapter_20251211_100926.json"
+    },
+    {
+      "name": "ChatAdapter",
+      "baseline": {
+        "accuracy": 64.29,
+        "total_correct": 45,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 68.57,
+        "total_correct": 47,
+        "total_questions": 70
+      },
+      "accuracy_boost": 4.279999999999987,
+      "optimization_time_seconds": 0.64333,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_ChatAdapter_20251211_100926.json"
+    },
+    {
+      "name": "JSONAdapter",
+      "baseline": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "accuracy_boost": 0.0,
+      "optimization_time_seconds": 0.961915,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_JSONAdapter_20251211_100926.json"
+    },
+    {
+      "name": "BAMLAdapter",
+      "baseline": {
+        "accuracy": 62.86,
+        "total_correct": 44,
+        "total_questions": 70
+      },
+      "optimized": {
+        "accuracy": 67.14,
+        "total_correct": 46,
+        "total_questions": 70
+      },
+      "accuracy_boost": 4.280000000000001,
+      "optimization_time_seconds": 0.854945,
+      "optimized_program_path": "benchmark_optimisation_results/optimized_BAMLAdapter_20251211_100926.json"
+    }
+  ]
+}

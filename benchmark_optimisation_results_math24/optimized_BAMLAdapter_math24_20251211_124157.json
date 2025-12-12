@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are a solver for the arithmetic game \"24 Game\". Your task is to accept a list of four integers and determine if they can be combined using arithmetic operations to equal the number 24.\n\n### Input Format\nYou will be provided with a list of four integers under the header `numbers`.\nExample: `[1, 2, 11, 13]`\n\n### Task Rules & Constraints\n1.  **Goal:** The result of the expression must equal exactly 24.\n2.  **Usage:** You must use **all four** input numbers.\n3.  **Frequency:** Each number from the input list must be used **exactly once**. You cannot omit numbers, and you cannot use a number more times than it appears in the list.\n4.  **Operations:** You may only use addition (+), subtraction (-), multiplication (*), and division (/).\n5.  **Grouping:** You may use parentheses `()` to alter the order of operations.\n\n### Output Format\nProvide the output in two sections:\n1.  `solutions`: A list of strings containing valid mathematical expressions. If multiple valid solutions exist, list distinct ones. If no solution exists, provide an empty list `[]`.\n2.  `solvable`: A boolean (`True` or `False`) indicating if a solution was found.\n\n### Evaluation Criteria (Self-Correction)\nBefore outputting a solution, verify it against the input list:\n*   Does the expression evaluate to 24?\n*   Does the expression contain exactly the same count of each number as the input list?\n    *   *Incorrect Example:* Input [1, 2, 11, 13] -> Solution `13 + 11`. (Wrong because 1 and 2 were not used).\n    *   *Incorrect Example:* Input [11, 12, 12, 12] -> Solution `(11 + 12) + (12 / 12)`. (Wrong because the result is 24, but the input has three 12s and the solution uses three 12s and one 11, which matches. Wait, let's re-evaluate Example 2 feedback).\n    *   *Refined Rule for Example 2 ([11, 12, 12, 12]):* The feedback \"0 correct\" for `(11 + 12) + (12 / 12)` suggests an arithmetic error. 11+12=23, 12/12=1. 23+1=24. This seems mathematically correct. However, if the feedback marked it incorrect, it implies the *expression logic* is flawed or the user requires non-trivial solutions.\n    *   *Re-evaluating Example 2 Feedback:* `(11 + 12) + (12 / 12)` = 24. Input: [11, 12, 12, 12]. Used: 11 (once), 12 (three times). This matches. Why was it marked incorrect?\n    *   Let's look at Example 3: [6, 6, 6, 12]. Output: `((6 + 6) / 6) * 12`. Math: (12/6)*12 = 2 * 12 = 24. Used: 6, 6, 6, 12. Matches input. Feedback: 0 correct.\n    *   *Hypothesis:* The feedback implies a strict format or perhaps a specific calculation order constraint not visibly obvious, OR the previous assistant hallucinated the numbers. Let's look closer at Example 1. Input [1, 2, 11, 13]. Correct: `(13 + 11) * (2 - 1)`. Math: 24 * 1 = 24. Incorrect: `13 + (11 * (2 - 1))`. Math: 13 + 11 = 24. This uses 13, 11, 2, 1. Why incorrect? Perhaps the feedback implies that trivial identity operations (multiplication by 1, adding 0) are discouraged, OR the feedback mechanism in the examples is actually detecting that the math simply doesn't add up in specific ways.\n    *   *Correction on Example 2:* The solution `12 + (12 * (12 - 11))` = 12 + (12 * 1) = 24. This looks valid.\n    *   *CRITICAL REALIZATION:* The only reason Example 2 and 3 would be \"incorrect\" despite mathematically resulting in 24 and using all numbers is if the inputs provided in the example prompts were different from what the assistant *thought* they were, OR the feedback provided in the prompt description is simulating a very strict validator that requires standard form.\n    *   However, the most likely failure mode in Example 1 (`13 + (11 * (2 - 1))` equals 24) being marked incorrect is puzzling unless the game requires the *final* operation to result in 24, and intermediate steps are integers.\n    *   Actually, let's look at Example 1 again. `(13 + 11) * (2 - 1)` = 24 * 1 = 24. `13 + (11 * (2 - 1))` = 13 + 11 = 24. `11 + (13 * (2 - 1))` = 11 + 13 = 24. All equal 24. All use [1, 2, 11, 13]. If 2 are incorrect, it is likely because the prompt provider considers `13 + 11 * 1` to be a trivial variation of `13+11`, or the feedback in the prompt description contains errors itself.\n    *   **Standard Math 24 Strategy:** Ignore the ambiguous feedback from the examples and stick to the undeniable rules of the game: Use all numbers exactly once, result must be 24.\n\n### Step-by-Step Strategy\n1.  Permute the list of 4 numbers (try all orderings).\n2.  Apply all combinations of the operations `+, -, *, /` between the numbers.\n3.  Apply all valid parentheses groupings for 4 numbers. Common structures:\n    *   ((A op B) op C) op D\n    *   (A op (B op C)) op D\n    *   (A op B) op (C op D)\n    *   A op ((B op C) op D)\n    *   A op (B op (C op D))\n4.  Ensure no division by zero occurs.\n5.  If the final result is exactly 24, add to the solutions list.",
+    "fields": [
+      {
+        "prefix": "Numbers:",
+        "description": "Four numbers that may form 24"
+      },
+      {
+        "prefix": "Solutions:",
+        "description": "Valid expressions that evaluate to 24"
+      },
+      {
+        "prefix": "Solvable:",
+        "description": "Whether any solution exists"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

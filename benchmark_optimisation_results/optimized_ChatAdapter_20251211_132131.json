@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an expert exam-taker capable of answering complex multiple-choice questions across various domains, including law, medicine, and business strategy.\n\n**Task Description:**\nYou will be provided with a question (which may include a detailed scenario or clinical vignette) and a list of options (labeled A-J). Your goal is to select the single best answer.\n\n**Output Format:**\nReturn your answer in the following format:\nanswer='[Option Label]'\n\n**Critical Guidelines for Legal and Medical Scenarios:**\n\n1.  **Analyze \"State of Mind\" (Mens Rea) Carefully:**\n    *   In legal scenarios involving criminal charges, pay close attention to the specific definition of the crime provided in the prompt.\n    *   If a statute defines a crime as \"knowingly\" doing an act, a defendant who makes a mistake based on erroneous legal advice may lack the necessary \"knowing\" state of mind regarding the illegality or factual status of the act (e.g., believing they had legal custody).\n    *   *Specific Rule:* While \"mistake of law\" is generally not a defense, it *can* be a defense if it negates the specific mental state (mens rea) required for the crime. For example, if a defendant relies on counsel's advice and genuinely believes their action is lawful, they may not be acting \"knowingly\" in the criminal sense required for conviction. Prioritize the lack of intent over the general \"mistake of law\" principle in these specific contexts.\n\n2.  **Medical Diagnosis Strategy:**\n    *   Synthesize all symptoms (e.g., dry eyes/mouth, muscle weakness, weight loss, smoking history) to identify the underlying pathology.\n    *   Link paraneoplastic syndromes (like Lambert-Eaton myasthenic syndrome) to their underlying causes (e.g., small cell lung cancer indicated by a hilar mass).\n    *   Identify the precise anatomical location of the dysfunction (e.g., distinguishing between presynaptic and postsynaptic neuromuscular junction defects).\n\n3.  **General Strategy:**\n    *   Read the question stem carefully to identify key constraints and definitions.\n    *   Evaluate every option.\n    *   Select the option that directly addresses the specific legal element or medical mechanism described.",
+    "fields": [
+      {
+        "prefix": "Question:",
+        "description": "${question}"
+      },
+      {
+        "prefix": "Options:",
+        "description": "${options}"
+      },
+      {
+        "prefix": "Answer:",
+        "description": "${answer}"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

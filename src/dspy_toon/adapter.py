@@ -224,9 +224,9 @@ def _get_output_schema(field_name: str, field_type: Any) -> str:
         schema = _build_toon_schema(field_type, indent=1)
         return f"{field_name}:\n{schema}"
 
-    # List of primitives - TOON format: fieldname[COUNT]: values
+    # List of primitives - TOON format: fieldname[COUNT]: v1,v2,v3 (single line)
     if origin is list:
-        return f"{field_name}[3]: val1,val2,val3 (replace 3 with actual count)"
+        return f"{field_name}[COUNT]: value1,value2,value3"
 
     # Simple types
     return f"{field_name}: {_render_type_str(field_type)}"
@@ -333,14 +333,16 @@ class ToonAdapter(Adapter):
 
         sections.append("""
 TOON Format (NOT JSON):
-- Simple values: key: value
-- Arrays of objects use tabular format with header:
+- Simple values: key: value (booleans: true/false)
+- Primitive arrays: field[COUNT]: item1,item2,item3  (single line, comma-separated; replace COUNT)
+- Tabular arrays for objects:
   [COUNT]{field1,field2}:
     value1,value2
     value3,value4
-  where COUNT is the actual number of items
-- No JSON braces {} or brackets []
-- No quotes around simple strings
+  (COUNT is the actual number of rows)
+- Empty/none values: use `field: null` (no [COUNT]) when there are no items or the value is absent
+- No JSON braces/brackets, code fences, or dashes for primitive arrays
+- Do not wrap output in JSON or YAML; emit plain TOON only
 """)
 
         sections.append("Output structure:")
@@ -644,6 +646,39 @@ TOON Format (NOT JSON):
                 return self._convert_field(parsed, field_type)
             except Exception:
                 return value_str
+
+        # Inline list with optional count: field[COUNT]: v1,v2
+        inline_list_pattern = rf"^{re.escape(field_name)}(?:\[\d+\])?:\s*([^\n]+)$"
+        match = re.search(inline_list_pattern, completion, re.MULTILINE)
+        if match:
+            values_str = match.group(1).strip()
+            # Split on commas, strip spaces
+            items = [v.strip() for v in values_str.split(",") if v.strip()]
+            origin = get_origin(field_type)
+            if origin is list:
+                return items
+            if items:
+                try:
+                    parsed = decode(items[0])
+                    return self._convert_field(parsed, field_type)
+                except Exception:
+                    return items[0]
+
+        # Look for field_name[<n>]: followed by plain list lines (e.g., solutions[10]:\nitem1\nitem2)
+        list_block_pattern = rf"^{re.escape(field_name)}(?:\[\d+\])?:\s*\n((?:.+\n?)*?)(?=^\w[\w\s]*:|\Z)"
+        match = re.search(list_block_pattern, completion, re.MULTILINE)
+        if match:
+            block = match.group(1).strip()
+            lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+            if lines:
+                origin = get_origin(field_type)
+                if origin is list:
+                    return lines
+                try:
+                    parsed = decode(lines[0])
+                    return self._convert_field(parsed, field_type)
+                except Exception:
+                    return lines[0] if lines else None
 
         return None
 
