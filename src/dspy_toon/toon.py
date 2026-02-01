@@ -1064,7 +1064,8 @@ def _decode_list_array(
                         field_header = _parse_header(field_content)
                         if field_header is not None and field_header[0] is not None:
                             field_key2, field_length, field_delim, field_fields = field_header
-                            assert field_key2 is not None
+                            if field_key2 is None:
+                                raise ValueError("field_key2 cannot be None")
                             field_val, next_i = _decode_array_from_header(
                                 lines, i, field_line.depth, field_header, strict
                             )
