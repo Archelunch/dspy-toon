@@ -640,7 +640,27 @@ def _encode_object_as_list_item(
             first_key, len(first_value), None, options.delimiter, options.lengthMarker
         )
         writer.push(depth, f"{LIST_ITEM_PREFIX}{header}")
-        _encode_array_content(first_value, options, writer, depth + 1)
+        # Encode array items at depth + 1
+        for item in first_value:
+            if is_json_primitive(item):
+                writer.push(
+                    depth + 1,
+                    f"{LIST_ITEM_PREFIX}{encode_primitive(item, options.delimiter)}",
+                )
+            elif is_json_object(item):
+                _encode_object_as_list_item(item, options, writer, depth + 1)
+            elif is_json_array(item):
+                # Nested array as list item
+                if is_array_of_primitives(item):
+                    encoded = [encode_primitive(v, options.delimiter) for v in item]
+                    joined = options.delimiter.join(encoded)
+                    h = format_header(None, len(item), None, options.delimiter, options.lengthMarker)
+                    line = f"{LIST_ITEM_PREFIX}{h}"
+                    if joined:
+                        line += f" {joined}"
+                    writer.push(depth + 1, line)
+                else:
+                    _encode_array(item, options, writer, depth + 1, None)
         # Other fields at depth +1 (relative to hyphen line)
         for k, v in keys[1:]:
             _encode_key_value_pair(k, v, options, writer, depth + 1)
