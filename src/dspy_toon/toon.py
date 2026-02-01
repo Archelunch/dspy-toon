@@ -964,7 +964,8 @@ def _decode_list_array(
             elif fields is not None:
                 # v3.0: Tabular header on hyphen line: - key[N]{fields}:
                 # Rows at depth +2, other fields at depth +1
-                assert key is not None, "Tabular header must have a key"
+                if key is None:
+                    raise ToonDecodeError("Tabular header must have a key")
                 obj_item: dict[str, Any] = {}
                 tabular_rows, next_i = _decode_tabular_array(
                     lines, i + 1, line.depth, fields, item_delim, length, strict
@@ -982,12 +983,13 @@ def _decode_list_array(
                     field_header = _parse_header(field_content)
                     if field_header is not None and field_header[0] is not None:
                         field_key, field_length, field_delim, field_fields = field_header
-                        field_val, next_i = _decode_array_from_header(
-                            lines, i, field_line.depth, field_header, strict
-                        )
-                        obj_item[field_key] = field_val
-                        i = next_i
-                        continue
+                        if field_key is not None:
+                            field_val, next_i = _decode_array_from_header(
+                                lines, i, field_line.depth, field_header, strict
+                            )
+                            obj_item[field_key] = field_val
+                            i = next_i
+                            continue
                     try:
                         field_key_str, field_value_str = _split_key_value(field_content)
                         field_key = _parse_key(field_key_str)
@@ -1029,12 +1031,13 @@ def _decode_list_array(
                             field_header = _parse_header(field_content)
                             if field_header is not None and field_header[0] is not None:
                                 field_key2, field_length, field_delim, field_fields = field_header
-                                field_val, next_i = _decode_array_from_header(
-                                    lines, i, field_line.depth, field_header, strict
-                                )
-                                prim_obj_item[field_key2] = field_val
-                                i = next_i
-                                continue
+                                if field_key2 is not None:
+                                    field_val, next_i = _decode_array_from_header(
+                                        lines, i, field_line.depth, field_header, strict
+                                    )
+                                    prim_obj_item[field_key2] = field_val
+                                    i = next_i
+                                    continue
                             try:
                                 field_key_str, field_value_str = _split_key_value(field_content)
                                 field_key2 = _parse_key(field_key_str)
@@ -1061,6 +1064,7 @@ def _decode_list_array(
                         field_header = _parse_header(field_content)
                         if field_header is not None and field_header[0] is not None:
                             field_key2, field_length, field_delim, field_fields = field_header
+                            assert field_key2 is not None
                             field_val, next_i = _decode_array_from_header(
                                 lines, i, field_line.depth, field_header, strict
                             )
