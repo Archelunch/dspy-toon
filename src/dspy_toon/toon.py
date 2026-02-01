@@ -964,6 +964,7 @@ def _decode_list_array(
             elif fields is not None:
                 # v3.0: Tabular header on hyphen line: - key[N]{fields}:
                 # Rows at depth +2, other fields at depth +1
+                assert key is not None, "Tabular header must have a key"
                 obj_item: dict[str, Any] = {}
                 tabular_rows, next_i = _decode_tabular_array(
                     lines, i + 1, line.depth, fields, item_delim, length, strict
@@ -1008,15 +1009,15 @@ def _decode_list_array(
                 colon_idx = item_content.find(COLON)
                 if colon_idx != -1:
                     inline_part = item_content[colon_idx + 1 :].strip()
-                    obj_item: dict[str, Any] = {}
+                    prim_obj_item: dict[str, Any] = {}
                     if inline_part or length == 0:
-                        obj_item[key] = _decode_inline_array(inline_part, item_delim, length, strict)
+                        prim_obj_item[key] = _decode_inline_array(inline_part, item_delim, length, strict)
                     else:
                         # Non-inline primitive array - decode as list array
                         arr_val, next_i = _decode_list_array(
                             lines, i + 1, line.depth, item_delim, length, strict
                         )
-                        obj_item[key] = arr_val
+                        prim_obj_item[key] = arr_val
                         i = next_i
                         # Read remaining fields at depth +1
                         while i < len(lines) and lines[i].depth == line.depth + 1:
@@ -1027,27 +1028,27 @@ def _decode_list_array(
                             field_content = field_line.content
                             field_header = _parse_header(field_content)
                             if field_header is not None and field_header[0] is not None:
-                                field_key, field_length, field_delim, field_fields = field_header
+                                field_key2, field_length, field_delim, field_fields = field_header
                                 field_val, next_i = _decode_array_from_header(
                                     lines, i, field_line.depth, field_header, strict
                                 )
-                                obj_item[field_key] = field_val
+                                prim_obj_item[field_key2] = field_val
                                 i = next_i
                                 continue
                             try:
                                 field_key_str, field_value_str = _split_key_value(field_content)
-                                field_key = _parse_key(field_key_str)
+                                field_key2 = _parse_key(field_key_str)
                                 if not field_value_str:
-                                    obj_item[field_key] = _decode_object(lines, i + 1, field_line.depth, strict)
+                                    prim_obj_item[field_key2] = _decode_object(lines, i + 1, field_line.depth, strict)
                                     i += 1
                                     while i < len(lines) and lines[i].depth > field_line.depth:
                                         i += 1
                                 else:
-                                    obj_item[field_key] = _parse_primitive(field_value_str)
+                                    prim_obj_item[field_key2] = _parse_primitive(field_value_str)
                                     i += 1
                             except ToonDecodeError:
                                 break
-                        result.append(obj_item)
+                        result.append(prim_obj_item)
                         continue
                     i += 1
                     # Read remaining fields at depth +1 (same as hyphen line)
@@ -1059,27 +1060,27 @@ def _decode_list_array(
                         field_content = field_line.content
                         field_header = _parse_header(field_content)
                         if field_header is not None and field_header[0] is not None:
-                            field_key, field_length, field_delim, field_fields = field_header
+                            field_key2, field_length, field_delim, field_fields = field_header
                             field_val, next_i = _decode_array_from_header(
                                 lines, i, field_line.depth, field_header, strict
                             )
-                            obj_item[field_key] = field_val
+                            prim_obj_item[field_key2] = field_val
                             i = next_i
                             continue
                         try:
                             field_key_str, field_value_str = _split_key_value(field_content)
-                            field_key = _parse_key(field_key_str)
+                            field_key2 = _parse_key(field_key_str)
                             if not field_value_str:
-                                obj_item[field_key] = _decode_object(lines, i + 1, field_line.depth, strict)
+                                prim_obj_item[field_key2] = _decode_object(lines, i + 1, field_line.depth, strict)
                                 i += 1
                                 while i < len(lines) and lines[i].depth > field_line.depth:
                                     i += 1
                             else:
-                                obj_item[field_key] = _parse_primitive(field_value_str)
+                                prim_obj_item[field_key2] = _parse_primitive(field_value_str)
                                 i += 1
                         except ToonDecodeError:
                             break
-                    result.append(obj_item)
+                    result.append(prim_obj_item)
                     continue
         try:
             key_str, value_str = _split_key_value(item_content)
