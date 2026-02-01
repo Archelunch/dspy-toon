@@ -24,7 +24,6 @@ keywords = [
     "token-reduction",
     "serialization",
     "serialization-format",
-    "pydantic",
     "ai",
     "machine-learning",
     "nlp",
