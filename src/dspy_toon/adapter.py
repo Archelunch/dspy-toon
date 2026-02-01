@@ -286,9 +286,18 @@ class ToonAdapter(Adapter):
 
         Tabular array:
         ```
-        [2,]{id,name}:
+        [2]{id,name}:
           1,Alice
           2,Bob
+        ```
+
+        Object with tabular array as first field (in list):
+        ```
+        items[1]:
+          - users[2]{id,name}:
+            1,Ada
+            2,Bob
+            status: active
         ```
     """
 
@@ -340,8 +349,12 @@ TOON Format (NOT JSON):
     value1,value2
     value3,value4
   (COUNT is the actual number of rows)
+- Objects in arrays (list items):
+  - If first field is a tabular array: `- field[COUNT]{f1,f2}:` followed by rows at same indent, then other fields
+  - If first field is a primitive array: `- field[COUNT]: v1,v2` inline, then other fields
+  - Empty object in array: just `-` on its own line
 - Empty/none values: use `field: null` (no [COUNT]) when there are no items or the value is absent
-- No JSON braces/brackets, code fences, or dashes for primitive arrays
+- No JSON braces/brackets, code fences
 - Do not wrap output in JSON or YAML; emit plain TOON only
 """)
 

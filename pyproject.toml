@@ -1,7 +1,7 @@
 [project]
 name = "dspy-toon"
-version = "0.2.1"
-description = "DSPy adapter using TOON (Token-Oriented Object Notation) format for 30-60% token reduction in LLM structured outputs"
+version = "0.3.0"
+description = "DSPy adapter using TOON (Token-Oriented Object Notation) v3.0 format for 40%+ token reduction in LLM structured outputs"
 readme = "README.md"
 authors = [
     { name = "Michael Pavlukhin", email = "michael@pavlukhinlab.com" }
@@ -9,26 +9,34 @@ authors = [
 requires-python = ">=3.10,<3.15"
 dependencies = [
     "datasets>=4.4.1",
-    "dspy>=2.5.0",
+    "dspy>=3.0.0",
     "pydantic>=2.0.0",
 ]
 license = { text = "MIT" }
 keywords = [
     "dspy",
     "toon",
+    "toon-format",
     "llm",
     "adapter",
     "structured-output",
     "token-efficient",
+    "token-reduction",
     "serialization",
+    "serialization-format",
+    "pydantic",
     "ai",
     "machine-learning",
+    "nlp",
+    "prompt-engineering",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

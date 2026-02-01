@@ -170,3 +170,100 @@ class TestRoundTrip:
         encoded = encode(data)
         decoded = decode(encoded)
         assert list(decoded.keys()) == ["z", "a", "m"]
+
+
+class TestV3Format:
+    """Test TOON spec v3.0 format compliance."""
+
+    def test_encode_list_item_with_tabular_first_field(self):
+        """Test v3.0 encoding of object with tabular array as first field."""
+        data = {
+            "items": [
+                {
+                    "users": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bob"}],
+                    "status": "active",
+                }
+            ]
+        }
+        result = encode(data)
+        # v3.0 format: tabular header on hyphen line, rows at depth +1, fields at depth +1
+        assert "- users[2]{id,name}:" in result
+        assert "1,Ada" in result
+        assert "2,Bob" in result
+        assert "status: active" in result
+
+    def test_decode_list_item_with_tabular_first_field(self):
+        """Test v3.0 decoding of object with tabular array as first field."""
+        toon = """items[1]:
+  - users[2]{id,name}:
+    1,Ada
+    2,Bob
+    status: active"""
+        result = decode(toon)
+        expected = {
+            "items": [
+                {
+                    "users": [{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bob"}],
+                    "status": "active",
+                }
+            ]
+        }
+        assert result == expected
+
+    def test_encode_list_item_with_primitive_array_first_field(self):
+        """Test v3.0 encoding of object with primitive array as first field."""
+        data = {"items": [{"tags": ["a", "b"], "name": "test"}]}
+        result = encode(data)
+        # v3.0 format: inline primitive array on hyphen line
+        assert "- tags[2]: a,b" in result
+        assert "name: test" in result
+
+    def test_decode_list_item_with_primitive_array_first_field(self):
+        """Test v3.0 decoding of object with primitive array as first field."""
+        toon = """items[1]:
+  - tags[2]: a,b
+    name: test"""
+        result = decode(toon)
+        expected = {"items": [{"tags": ["a", "b"], "name": "test"}]}
+        assert result == expected
+
+    def test_encode_empty_list_item_object(self):
+        """Test v3.0 encoding of empty object as list item."""
+        data = {"items": [{}]}
+        result = encode(data)
+        # v3.0 format: bare hyphen for empty object
+        assert "items[1]:\n  -" in result
+
+    def test_decode_empty_list_item_object(self):
+        """Test v3.0 decoding of empty object as list item."""
+        toon = "items[1]:\n  -"
+        result = decode(toon)
+        expected = {"items": [{}]}
+        assert result == expected
+
+    def test_roundtrip_list_item_with_tabular_first_field(self):
+        """Test roundtrip for v3.0 tabular first field format."""
+        data = {
+            "results": [
+                {
+                    "items": [{"sku": "A1", "qty": 2}, {"sku": "B2", "qty": 1}],
+                    "total": 10.5,
+                    "count": 2,
+                }
+            ]
+        }
+        encoded = encode(data)
+        decoded = decode(encoded)
+        assert decoded == data
+
+    def test_multiple_list_items_with_tabular_first_field(self):
+        """Test multiple list items with tabular first field."""
+        data = {
+            "data": [
+                {"users": [{"id": 1}, {"id": 2}], "status": "active"},
+                {"users": [{"id": 3}], "status": "inactive"},
+            ]
+        }
+        encoded = encode(data)
+        decoded = decode(encoded)
+        assert decoded == data

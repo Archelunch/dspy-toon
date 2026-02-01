@@ -71,12 +71,24 @@ TOON uses compact syntax that LLMs can easily produce and parse:
 [{"id":1,"name":"Person 1","age":21},{"id":2,"name":"Person 2","age":22},{"id":3,"name":"Person 3","age":23}]
 ```
 
-**TOON:**
+**TOON (v3.0 format):**
 ```
 [3]{id,name,age}:
   1,Person 1,21
   2,Person 2,22
   3,Person 3,23
+```
+
+**Objects with arrays as first field:**
+```
+items[2]:
+  - users[2]{id,name}:
+    1,Alice
+    2,Bob
+    status: active
+  - users[1]{id,name}:
+    3,Carol
+    status: pending
 ```
 
 ## Benchmarks

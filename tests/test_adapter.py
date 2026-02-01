@@ -608,9 +608,9 @@ class TestToonFormatCompliance:
         from dspy_toon.adapter import _get_output_schema
 
         result = _get_output_schema("tags", list[str])
-        # Should be "tags[3]: val1,val2,val3" not "tags: [3]: val1,val2,val3"
-        assert "tags[3]:" in result
-        assert "tags: [3]" not in result
+        # Should be "tags[COUNT]: val1,val2,val3" not "tags: [COUNT]: val1,val2,val3"
+        assert "tags[COUNT]:" in result
+        assert "tags: [COUNT]" not in result
 
     def test_output_schema_object_array(self):
         """Test _get_output_schema for object arrays."""

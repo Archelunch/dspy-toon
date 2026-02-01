@@ -575,16 +575,83 @@ def _encode_object_as_list_item(
     writer: LineWriter,
     depth: Depth,
 ) -> None:
-    """Encode object as a list item."""
+    """Encode object as a list item.
+
+    Following TOON spec v3.0 Section 10:
+    - When first field is a tabular array: emit `- key[N]{fields}:` on hyphen line
+      with rows at depth +1 and other fields at depth +1
+    - For other cases: use standard object encoding
+    """
     keys = list(obj.items())
     if not keys:
         writer.push(depth, LIST_ITEM_PREFIX.rstrip())
         return
+
     first_key, first_value = keys[0]
+
+    # Check if first value is an array (v3.0 format)
+    if is_json_array(first_value):
+        # Check for tabular array (array of uniform objects with primitive values)
+        if is_array_of_objects(first_value):
+            tabular_fields = detect_tabular_header(first_value, options.delimiter)
+            if tabular_fields:
+                # v3.0: Emit tabular header on hyphen line
+                header = format_header(
+                    first_key,
+                    len(first_value),
+                    tabular_fields,
+                    options.delimiter,
+                    options.lengthMarker,
+                )
+                writer.push(depth, f"{LIST_ITEM_PREFIX}{header}")
+                # Rows at depth +1 (relative to hyphen line)
+                for row_obj in first_value:
+                    row_values = [
+                        encode_primitive(row_obj[field], options.delimiter)
+                        for field in tabular_fields
+                    ]
+                    row = options.delimiter.join(row_values)
+                    writer.push(depth + 1, row)
+                # Other fields at depth +1 (relative to hyphen line)
+                for k, v in keys[1:]:
+                    _encode_key_value_pair(k, v, options, writer, depth + 1)
+                return
+
+        # Primitive array: inline on hyphen line
+        if is_array_of_primitives(first_value):
+            encoded_values = [
+                encode_primitive(item, options.delimiter) for item in first_value
+            ]
+            joined = options.delimiter.join(encoded_values)
+            header = format_header(
+                first_key, len(first_value), None, options.delimiter, options.lengthMarker
+            )
+            line = f"{LIST_ITEM_PREFIX}{header}"
+            if joined:
+                line += f" {joined}"
+            writer.push(depth, line)
+            # Other fields at depth +1 (relative to hyphen line)
+            for k, v in keys[1:]:
+                _encode_key_value_pair(k, v, options, writer, depth + 1)
+            return
+
+        # Array of arrays or mixed array: write header on hyphen line, content below
+        header = format_header(
+            first_key, len(first_value), None, options.delimiter, options.lengthMarker
+        )
+        writer.push(depth, f"{LIST_ITEM_PREFIX}{header}")
+        _encode_array_content(first_value, options, writer, depth + 1)
+        # Other fields at depth +1 (relative to hyphen line)
+        for k, v in keys[1:]:
+            _encode_key_value_pair(k, v, options, writer, depth + 1)
+        return
+
+    # Standard encoding for primitive first field
     if is_json_primitive(first_value):
         encoded_val = encode_primitive(first_value, options.delimiter)
         writer.push(depth, f"{LIST_ITEM_PREFIX}{encode_key(first_key)}: {encoded_val}")
     else:
+        # Nested object: bare hyphen, encode at depth +1
         writer.push(depth, LIST_ITEM_PREFIX.rstrip())
         _encode_key_value_pair(first_key, first_value, options, writer, depth + 1)
     for k, v in keys[1:]:
@@ -846,13 +913,26 @@ def _decode_list_array(
         if line.depth < item_depth:
             break
         content = line.content
+        # Handle bare "-" (without space) as empty list item
+        if content == LIST_ITEM_MARKER:
+            result.append({})
+            i += 1
+            continue
         if not content.startswith(LIST_ITEM_PREFIX):
             break
         item_content = content[len(LIST_ITEM_PREFIX) :].strip()
+
+        # v3.0: Bare hyphen means empty object
+        if not item_content:
+            result.append({})
+            i += 1
+            continue
+
         item_header = _parse_header(item_content)
         if item_header is not None:
             key, length, item_delim, fields = item_header
             if key is None:
+                # Inline array: - [N]: v1,v2,...
                 colon_idx = item_content.find(COLON)
                 if colon_idx != -1:
                     inline_part = item_content[colon_idx + 1 :].strip()
@@ -861,9 +941,129 @@ def _decode_list_array(
                         result.append(item_val)
                         i += 1
                         continue
+            elif fields is not None:
+                # v3.0: Tabular header on hyphen line: - key[N]{fields}:
+                # Rows at depth +2, other fields at depth +1
+                obj_item: dict[str, Any] = {}
+                tabular_rows, next_i = _decode_tabular_array(
+                    lines, i + 1, line.depth, fields, item_delim, length, strict
+                )
+                obj_item[key] = tabular_rows
+                i = next_i
+                # Read remaining fields at depth +1 (same as hyphen line)
+                while i < len(lines) and lines[i].depth == line.depth + 1:
+                    field_line = lines[i]
+                    if field_line.is_blank:
+                        i += 1
+                        continue
+                    field_content = field_line.content
+                    # Check for array header
+                    field_header = _parse_header(field_content)
+                    if field_header is not None and field_header[0] is not None:
+                        field_key, field_length, field_delim, field_fields = field_header
+                        field_val, next_i = _decode_array_from_header(
+                            lines, i, field_line.depth, field_header, strict
+                        )
+                        obj_item[field_key] = field_val
+                        i = next_i
+                        continue
+                    try:
+                        field_key_str, field_value_str = _split_key_value(field_content)
+                        field_key = _parse_key(field_key_str)
+                        if not field_value_str:
+                            obj_item[field_key] = _decode_object(lines, i + 1, field_line.depth, strict)
+                            i += 1
+                            while i < len(lines) and lines[i].depth > field_line.depth:
+                                i += 1
+                        else:
+                            obj_item[field_key] = _parse_primitive(field_value_str)
+                            i += 1
+                    except ToonDecodeError:
+                        break
+                result.append(obj_item)
+                continue
+            elif key is not None and fields is None:
+                # v3.0: Primitive array on hyphen line: - key[N]: v1,v2,...
+                # Parse inline values after colon
+                colon_idx = item_content.find(COLON)
+                if colon_idx != -1:
+                    inline_part = item_content[colon_idx + 1 :].strip()
+                    obj_item: dict[str, Any] = {}
+                    if inline_part or length == 0:
+                        obj_item[key] = _decode_inline_array(inline_part, item_delim, length, strict)
+                    else:
+                        # Non-inline primitive array - decode as list array
+                        arr_val, next_i = _decode_list_array(
+                            lines, i + 1, line.depth, item_delim, length, strict
+                        )
+                        obj_item[key] = arr_val
+                        i = next_i
+                        # Read remaining fields at depth +1
+                        while i < len(lines) and lines[i].depth == line.depth + 1:
+                            field_line = lines[i]
+                            if field_line.is_blank:
+                                i += 1
+                                continue
+                            field_content = field_line.content
+                            field_header = _parse_header(field_content)
+                            if field_header is not None and field_header[0] is not None:
+                                field_key, field_length, field_delim, field_fields = field_header
+                                field_val, next_i = _decode_array_from_header(
+                                    lines, i, field_line.depth, field_header, strict
+                                )
+                                obj_item[field_key] = field_val
+                                i = next_i
+                                continue
+                            try:
+                                field_key_str, field_value_str = _split_key_value(field_content)
+                                field_key = _parse_key(field_key_str)
+                                if not field_value_str:
+                                    obj_item[field_key] = _decode_object(lines, i + 1, field_line.depth, strict)
+                                    i += 1
+                                    while i < len(lines) and lines[i].depth > field_line.depth:
+                                        i += 1
+                                else:
+                                    obj_item[field_key] = _parse_primitive(field_value_str)
+                                    i += 1
+                            except ToonDecodeError:
+                                break
+                        result.append(obj_item)
+                        continue
+                    i += 1
+                    # Read remaining fields at depth +1 (same as hyphen line)
+                    while i < len(lines) and lines[i].depth == line.depth + 1:
+                        field_line = lines[i]
+                        if field_line.is_blank:
+                            i += 1
+                            continue
+                        field_content = field_line.content
+                        field_header = _parse_header(field_content)
+                        if field_header is not None and field_header[0] is not None:
+                            field_key, field_length, field_delim, field_fields = field_header
+                            field_val, next_i = _decode_array_from_header(
+                                lines, i, field_line.depth, field_header, strict
+                            )
+                            obj_item[field_key] = field_val
+                            i = next_i
+                            continue
+                        try:
+                            field_key_str, field_value_str = _split_key_value(field_content)
+                            field_key = _parse_key(field_key_str)
+                            if not field_value_str:
+                                obj_item[field_key] = _decode_object(lines, i + 1, field_line.depth, strict)
+                                i += 1
+                                while i < len(lines) and lines[i].depth > field_line.depth:
+                                    i += 1
+                            else:
+                                obj_item[field_key] = _parse_primitive(field_value_str)
+                                i += 1
+                        except ToonDecodeError:
+                            break
+                    result.append(obj_item)
+                    continue
         try:
             key_str, value_str = _split_key_value(item_content)
-            obj_item: dict[str, Any] = {}
+            obj_item = {}
             key = _parse_key(key_str)
             if not value_str:
                 nested = _decode_object(lines, i + 1, line.depth + 1, strict)
