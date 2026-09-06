@@ -1,5 +1,10 @@
 # DSPy-TOON
 
+[![Tests](https://github.com/Archelunch/dspy-toon/actions/workflows/test.yml/badge.svg)](https://github.com/Archelunch/dspy-toon/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/mike_pavlukhin)
+
 A [DSPy](https://dspy.ai/) adapter that reads and writes [TOON](https://github.com/toon-format/spec), with a Python codec you can also use on its own.
 
 TOON stores uniform records under a shared header instead of repeating field names in every row. It can make structured prompts smaller, especially for lists of records, uniformly nested objects and dictionaries of records. Irregular data may be smaller as compact JSON.

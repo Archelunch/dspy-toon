@@ -26,7 +26,7 @@ The distinction became visible during the codec upgrade. These are serialization
 | 20 keyed uniform records | 352 | 220 | 254 |
 | Existing mixed array example | 68 | 68 | 47 |
 
-*Qwen token counts from the server's `/tokenize` endpoint with `add_special_tokens=false`, covering serialized data only. They exclude chat framing, instructions and generated output. The [tokenizer audit](../benchmark_results/qwen_token_counts/summary.json) preserves the counts; the [upgrade notes](../UPGRADE.md) contain the input definitions and the older, separately labeled `cl100k_base` measurements.*
+*Qwen token counts from the server's `/tokenize` endpoint with `add_special_tokens=false`, covering serialized data only. They exclude chat framing, instructions and generated output. The [upgrade notes](../UPGRADE.md) contain the input definitions and the older, separately labeled `cl100k_base` measurements.*
 
 The nested-record example is encouraging. The mixed array is a reminder to measure the actual data you intend to send.
 
