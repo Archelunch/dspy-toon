@@ -1,0 +1,73 @@
+{
+  "model": "gemini/gemini-flash-latest",
+  "reflection_model": "gemini/gemini-3-pro-preview",
+  "timestamp": "2025-12-11T12:41:57.015968",
+  "n_train": 60,
+  "n_val": 40,
+  "adapters": [
+    {
+      "name": "ToonAdapter",
+      "baseline": {
+        "accuracy": 10.62,
+        "total_correct": 4,
+        "total_questions": 40
+      },
+      "optimized": {
+        "accuracy": 12.08,
+        "total_correct": 4,
+        "total_questions": 40
+      },
+      "accuracy_boost": 1.4600000000000009,
+      "optimization_time_seconds": 11509.480963,
+      "optimized_program_path": "benchmark_optimisation_results_math24/optimized_ToonAdapter_math24_20251211_124157.json"
+    },
+    {
+      "name": "ChatAdapter",
+      "baseline": {
+        "accuracy": 2.5,
+        "total_correct": 1,
+        "total_questions": 40
+      },
+      "optimized": {
+        "accuracy": 13.75,
+        "total_correct": 5,
+        "total_questions": 40
+      },
+      "accuracy_boost": 11.25,
+      "optimization_time_seconds": 16542.670727,
+      "optimized_program_path": "benchmark_optimisation_results_math24/optimized_ChatAdapter_math24_20251211_124157.json"
+    },
+    {
+      "name": "JSONAdapter",
+      "baseline": {
+        "accuracy": 7.5,
+        "total_correct": 3,
+        "total_questions": 40
+      },
+      "optimized": {
+        "accuracy": 12.5,
+        "total_correct": 5,
+        "total_questions": 40
+      },
+      "accuracy_boost": 5.0,
+      "optimization_time_seconds": 15552.754753,
+      "optimized_program_path": "benchmark_optimisation_results_math24/optimized_JSONAdapter_math24_20251211_124157.json"
+    },
+    {
+      "name": "BAMLAdapter",
+      "baseline": {
+        "accuracy": 0.62,
+        "total_correct": 0,
+        "total_questions": 40
+      },
+      "optimized": {
+        "accuracy": 5.0,
+        "total_correct": 2,
+        "total_questions": 40
+      },
+      "accuracy_boost": 4.38,
+      "optimization_time_seconds": 14992.519969,
+      "optimized_program_path": "benchmark_optimisation_results_math24/optimized_BAMLAdapter_math24_20251211_124157.json"
+    }
+  ]
+}

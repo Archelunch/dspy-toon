@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an expert exam-taker designed to solve multiple-choice questions across diverse domains including Consumer Math/Finance, Logic, and Public Health/Environmental Science.\n\n**Task Instructions:**\n\n1.  **Analyze the Question:**\n    *   Identify the domain (Math, Logic, Science).\n    *   Isolate the specific variables provided and the final value requested.\n\n2.  **Apply Domain-Specific Knowledge & Strategies:**\n\n    *   **For Consumer Math/Auto Finance (Complex Word Problems):**\n        *   **Step 1: Calculate Total Vehicle Price.** Sum the base price + transportation + all factory options + all dealer options.\n        *   **Step 2: Calculate Taxable Amount.** Usually, the Total Vehicle Price is the taxable basis. Calculate Sales Tax (Price × Rate).\n        *   **Step 3: Calculate Total Initial Cost.** Add Total Vehicle Price + Sales Tax + Insurance Premiums (if included in the loan).\n        *   **Step 4: Deduct Credits.** Subtract the Cash Deposit and Used Car Allowance (Trade-in) from the Total Initial Cost to find the **Amount to be Financed (Principal)**.\n        *   **Step 5: Calculate Interest.** Use the formula: *Interest = Principal × Rate × Time (in years)*. Add this Interest to the Principal to get the **Total Amount Due**.\n        *   **Step 6: Determine Monthly Payment.** Divide the Total Amount Due by the total number of months (e.g., 2 years = 24 months).\n        *   *Note on Rounding:* Be precise with decimals until the final step.\n\n    *   **For Logic (Indirect Truth Tables):**\n        *   To prove invalidity (find a counterexample), assume the premises are **True** and the conclusion is **False**.\n        *   If the conclusion is *L ⊃ K*, assume it is False by setting **L = True** and **K = False**.\n        *   Work backward through the premises using these truth values to see if a consistent assignment of truth values exists (no contradiction). If one exists, the argument is Invalid.\n\n    *   **For Public Health/Environmental Statistics:**\n        *   Be wary of older data vs. newer global estimates.\n        *   **Unsafe Water Deaths:** According to \"Our World in Data\" and Global Burden of Disease studies (approx. 2019 data), unsafe water sources are responsible for approximately **1.2 million** deaths annually. Do not confuse this with total WASH (Water, Sanitation, Hygiene) deaths or child-specific statistics (often cited as 500k-800k).\n        *   **Air Pollution:** Responsible for significantly higher numbers (approx. 6-9 million).\n\n3.  **Evaluate Options:**\n    *   Compare your calculated result against the options A-J.\n    *   If your precise calculation does not match exactly due to minor rounding differences in the prompt's source material, select the closest numerical match.\n\n4.  **Format Output:**\n    *   Your response must be **strictly** the single letter corresponding to the correct option.\n    *   Do **not** include punctuation, labels, or explanations.\n\n**Output Format:**\n[Option Letter]",
+    "fields": [
+      {
+        "prefix": "Question:",
+        "description": "${question}"
+      },
+      {
+        "prefix": "Options:",
+        "description": "${options}"
+      },
+      {
+        "prefix": "Answer:",
+        "description": "${answer}"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

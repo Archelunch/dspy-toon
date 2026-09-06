@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are a solver for the 'Math 24' game. You will receive a list of 4 integers. Your goal is to determine if these 4 numbers can be combined using arithmetic operations (+, -, *, /) and parentheses to equal exactly 24.\n\n**Strict Rules:**\n1.  **Usage:** You must use **every** number in the input list **exactly once**. You cannot reuse a number more times than it appears in the input. You cannot omit any number.\n2.  **Operations:** You are limited to addition, subtraction, multiplication, and division.\n3.  **Output Format:**\n    *   `solutions`: A list of strings, where each string is a valid mathematical expression evaluating to 24. If multiple solutions exist, include them. Do not include commutatively identical duplicates (e.g., '1+2' and '2+1').\n    *   `solvable`: A boolean (True/False).\n\n**Verification Steps before outputting:**\n*   Check that the count of each number in your proposed solution matches the count of that number in the input exactly.\n*   Verify the mathematical evaluation equals 24.\n```\n\n*Self-correction regarding \"Feedback\":* The feedback in the prompt examples is manually generated and suggests high rigor. The previous assistant failed primarily on number usage constraints (Example 2) or perhaps generating \"valid-looking\" math that didn't actually match the specific constraints (perhaps Example 1 and 3 are actually unsolvable with standard rules, and the assistant hallucinated that `11+1+12` uses `1, 2, 6, 11` when it actually simplifies too easily? No, that math is solid).\n\n*Wait, let's look at Example 1 `[1, 2, 6, 11]` again.*\nIs `(11+1) + (6*2)` actually 24? Yes.\nDoes it use 1, 11, 6, 2? Yes.\nWhy is it \"Incorrect\"?\nMaybe the numbers are `1, 2, 6, 1, 1`? No.\nMaybe the game is **using single digit numbers only** and `11` is treated as `1` and `1`? No, inputs are `[1, 2, 6, 11]`.\nMaybe the \"Feedback\" in the prompt is simulating a user who has a **different** set of cards than the assistant thinks?\n**Or, more likely, the prompt provided to me contains 'ground truth' that implies the assistant's previous solutions were wrong.** If `(11+1)+(6*2)` is wrong, then the operations are wrong.\nIs it possible the user considers `(11+1)` to be 12, and `6*2` to be 12, and `12+12` to be 24, but the Game of 24 implies you combine them sequentially? `(((11+1)+6)*2)`?\nStandard Math 24 allows `(A+B) + (C*D)`.\n\n**Let's ignore the confusing nature of Example 1's feedback and focus on the obvious error in Example 2.** The assistant used extra numbers. That is the most actionable constraint. The instruction must emphasize **Exact Count Usage**.\n\n**Format:** The user wants `solutions` and `solvable` as keys.\n\n```\nYou are an expert Math 24 solver.\n\nInput Format:\n### numbers\n[n1, n2, n3, n4]\n\nTask:\nGenerate arithmetic expressions using the four provided integers that evaluate to exactly 24.\n\nConstraints:\n1. Exact Usage: You must use each number from the input list exactly once. If a number appears twice in the input, it must appear twice in the expression. You cannot introduce new numbers (like 1, 0, etc.) unless they are in the input list.\n2. Operations: Allowed operators are +, -, *, /. Parentheses () are allowed.\n3. Validity: Ensure the expression evaluates to exactly 24.0.\n\nOutputs:\n### solutions\n[List of strings representing the expressions]\n### solvable\nTrue/False\n\nNote: Double-check that your solution does not use a number more times than it is available in the input list.",
+    "fields": [
+      {
+        "prefix": "Numbers:",
+        "description": "Four numbers that may form 24"
+      },
+      {
+        "prefix": "Solutions:",
+        "description": "Valid expressions that evaluate to 24"
+      },
+      {
+        "prefix": "Solvable:",
+        "description": "Whether any solution exists"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

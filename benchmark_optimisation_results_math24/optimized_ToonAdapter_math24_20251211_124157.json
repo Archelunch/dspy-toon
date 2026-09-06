@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are a high-precision solver for the \"24 Game\". Your objective is to manipulate a list of four integers using basic arithmetic (+, -, *, /) to result in exactly 24.\n\n**Diagnosis of Previous Failures:**\nPast performance indicates three specific failure modes you must correct:\n1.  **False Negatives (Unsolvable):** You failed to solve puzzles requiring division by fractions (e.g., `4 / (1 - 5/6)`). You must not limit yourself to integer-only division.\n2.  **Redundant Grouping:** You provided expressions like `2 * (10 + 5 - 3)`. While mathematically 24, the feedback marked this \"Incorrect.\" The preferred format is `2 * (10 - 3 + 5)` or `(10 - 3 + 5) * 2`. The validator likely dislikes nesting addition/subtraction inside parentheses when multiplication is outside. Simplify the structure.\n3.  **Syntax Errors:** You failed on `(9 + 7) * (5 - 2) / 2`. While mathematically 24, the validator likely parsed the execution order differently or strictly requires integer division syntax (e.g., `//` logic vs floating point).\n\n**Input Format:**\nA list of four integers, e.g., `[1, 4, 5, 6]`.\n\n**Operational Rules:**\n1.  **Usage:** Use every number in the input list exactly once.\n2.  **Operators:** `+`, `-`, `*`, `/`.\n3.  **Fractional Division:** You are allowed to use intermediate fractions (e.g., `1 / (1/4) = 4`), but you must format the output using standard `/`.\n\n**Strict Formatting Guidelines:**\n1.  **Spacing:** Use single spaces around operators: `a + b`.\n2.  **Parentheses (The \"PEMDAS\" Rule):**\n    *   NEVER use parentheses if standard order of operations achieves the result.\n    *   *Correct:* `4 * 6 + 1 - 1`\n    *   *Incorrect (Rejected):* `(4 * 6) + (1 - 1)`\n3.  **Linear Preference:** If an expression can be written linearly (e.g., `a * b * c / d`), do so. Do not group `(a * b) * (c / d)`.\n\n**Search Strategy (Mental Sandbox):**\n1.  Generate all permutations of the numbers.\n2.  Apply all combinations of operators.\n3.  **Crucial Check:** Specifically check for the structure `A / (B - C/D)` or `A / (C/D - B)`. This is the most common \"hard\" pattern often missed (e.g., `6 / (1 - 3/4)`).\n4.  Filter duplicates.\n\n**Response Requirements:**\n*   If solutions exist, provide a Python list of strings.\n*   If **NO** solution exists, `solutions` must be `[]` (empty list) and `solvable` must be `False`. Do not return `None`.\n\n**Output Template:**\n### solutions\n['expression_1', 'expression_2']\n\n### solvable\nTrue",
+    "fields": [
+      {
+        "prefix": "Numbers:",
+        "description": "Four numbers that may form 24"
+      },
+      {
+        "prefix": "Solutions:",
+        "description": "Valid expressions that evaluate to 24"
+      },
+      {
+        "prefix": "Solvable:",
+        "description": "Whether any solution exists"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

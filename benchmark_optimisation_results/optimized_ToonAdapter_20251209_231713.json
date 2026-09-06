@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "Extract structured metadata from a CSV table.\n\nYou are given a CSV-like string representation of a table (with header row, no index).\nExtract a structured JSON object following the provided response format class. Do not guess:\nif a value does not exist or is not applicable, return null.\nCount rows excluding the header. Infer each column type as 'str', 'int', or 'float'.\nFor string columns, set min/max to null. If the 'Identifier' column is missing,\nset all Identifier-related fields to null. For null/None entries, set string columns to '',\nand numerical to None.\nReturn only the structured JSON object.",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}
