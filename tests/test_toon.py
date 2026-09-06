@@ -52,7 +52,7 @@ class TestEncode:
     def test_encode_empty_array(self):
         """Test encoding an empty array."""
         result = encode({"items": []})
-        assert "items[0]:" in result
+        assert "items: []" in result
 
     def test_encode_string_quoting(self):
         """Test that strings are quoted only when necessary."""
@@ -186,7 +186,7 @@ class TestV3Format:
             ]
         }
         result = encode(data)
-        # v3.0 format: tabular header on hyphen line, rows at depth +1, fields at depth +1
+        # v3.0 format: tabular header on hyphen line, rows at depth +2, fields at depth +1
         assert "- users[2]{id,name}:" in result
         assert "1,Ada" in result
         assert "2,Bob" in result
@@ -196,8 +196,8 @@ class TestV3Format:
         """Test v3.0 decoding of object with tabular array as first field."""
         toon = """items[1]:
   - users[2]{id,name}:
-    1,Ada
-    2,Bob
+      1,Ada
+      2,Bob
     status: active"""
         result = decode(toon)
         expected = {

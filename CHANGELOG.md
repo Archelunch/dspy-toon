@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (unreleased)
+
+### Changed
+
+- Require DSPy 3.3.1 and reuse its call, demo, history and optional-output handling.
+- Target TOON 4.1: nested field groups, keyed tables, canonical empty arrays,
+  comments, Unicode escapes, number grammar and strict structural validation.
+- Replace duplicated codec branches with shared header, field and scope parsing.
+- Keep datasets in the benchmark extra instead of the core requirements.
+- Limit wheels and source archives to the runtime package, package metadata, README and license notices.
+- Rewrite the README around installation, usage and measured limitations.
+- Preserve inherited MIT attribution in NOTICE.
+- Read the package version from installed metadata.
+
+### Fixed
+
+- Encode complete prompt/demo objects, including lists of Pydantic models and nulls.
+- Validate output types and constraints instead of returning unchecked regex matches.
+- Correct list-item nesting and generate schema examples through the encoder.
+- Preserve field descriptions inside nested array schemas.
+- Align the benchmark BAML-inspired adapter’s output instructions with its JSON parser.
+- Preserve streaming spaces and detect following scalar/array field boundaries
+  across chunk splits. Document scalar-only incremental support.
+
+See [UPGRADE.md](UPGRADE.md) for compatibility changes and measured results.
+
 ## [0.3.0] - 2026-02-01
 
 ### Added

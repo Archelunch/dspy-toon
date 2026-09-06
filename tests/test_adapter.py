@@ -608,8 +608,8 @@ class TestToonFormatCompliance:
         from dspy_toon.adapter import _get_output_schema
 
         result = _get_output_schema("tags", list[str])
-        # Should be "tags[COUNT]: val1,val2,val3" not "tags: [COUNT]: val1,val2,val3"
-        assert "tags[COUNT]:" in result
+        # The encoder generates a concrete two-item shape example.
+        assert "tags[2]:" in result
         assert "tags: [COUNT]" not in result
 
     def test_output_schema_object_array(self):

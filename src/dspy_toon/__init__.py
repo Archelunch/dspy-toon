@@ -3,8 +3,8 @@
 """DSPy adapter using TOON (Token-Oriented Object Notation) format.
 
 TOON is a compact, human-readable serialization format optimized for LLM contexts.
-This package provides a DSPy adapter that achieves 30-60% token reduction vs JSON
-while maintaining readability and structure.
+This package provides a DSPy adapter for compact structured inputs and outputs.
+Token savings depend on data shape, tokenizer, and prompt overhead.
 
 Example:
     >>> import dspy
@@ -28,11 +28,13 @@ Example:
     UserInfo(name='Alice', age=30)
 """
 
+from importlib.metadata import version
+
 from .adapter import ToonAdapter
 from .streaming import enable_toon_streaming, is_streaming_enabled
 from .toon import ToonDecodeError, decode, encode
 
-__version__ = "0.1.0"
+__version__ = version("dspy-toon")
 __all__ = [
     "ToonAdapter",
     "encode",

@@ -96,7 +96,7 @@ def _build_simplified_schema(
         indent: Current indentation level
         seen_models: Set to track visited pydantic models (prevents infinite recursion)
     """
-    seen_models = seen_models or set()
+    seen_models = set(seen_models or ())
 
     if pydantic_model in seen_models:
         raise ValueError("BAMLAdapter cannot handle recursive pydantic models, please use a different adapter.")
@@ -201,33 +201,19 @@ class BAMLAdapter(JSONAdapter):
         return "\n".join(sections)
 
     def format_field_structure(self, signature: type[Signature]) -> str:
-        """Overrides the base method to generate a simplified schema for Pydantic models."""
-
-        sections = []
-
-        # Add structural explanation
+        """Describe BAML-style types inside the JSON wrapper expected by the parser."""
+        sections = ["Input fields use the following markers:"]
+        for name in signature.input_fields:
+            sections.append(f"[[ ## {name} ## ]]\n{{{name}}}")
+        output = ["{"]
+        for name, field in signature.output_fields.items():
+            output.append(f"  {name}: {_render_type_str(field.annotation, indent=1)},")
+        output.append("}")
         sections.append(
-            "All interactions will be structured in the following way, with the appropriate values filled in.\n"
+            "Respond with one JSON object matching this schema. Include every top-level output field as a key. "
+            "Do not use field markers around the output.\n" + "\n".join(output)
         )
-
-        # Add input structure section
-        if signature.input_fields:
-            for name in signature.input_fields.keys():
-                sections.append(f"[[ ## {name} ## ]]")
-                sections.append(f"{{{name}}}")
-                sections.append("")  # Empty line after each input
-
-        # Add output structure section
-        if signature.output_fields:
-            for name, field in signature.output_fields.items():
-                field_type = field.annotation
-                sections.append(f"[[ ## {name} ## ]]")
-                sections.append(f"Output field `{name}` should be of type: {_render_type_str(field_type, indent=0)}\n")
-
-        # Add completed section
-        sections.append("[[ ## completed ## ]]")
-
-        return "\n".join(sections)
+        return "\n\n".join(sections)
 
     def format_user_message_content(
         self,

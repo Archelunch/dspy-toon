@@ -1,6 +1,6 @@
 # DSPy-TOON
 
-DSPy adapter using TOON (Token-Oriented Object Notation) format for 40%+ token reduction in structured LLM outputs.
+DSPy adapter using TOON (Token-Oriented Object Notation) 4.1 format for compact structured LLM inputs and outputs.
 
 ## Build & Test
 
@@ -70,9 +70,9 @@ dspy-toon/
 - README examples should be runnable
 
 ### Dependencies
-- Core: `dspy>=3.0.0`, `pydantic>=2.0.0`, `datasets>=4.4.1`
+- Core: `dspy>=3.3.1,<4`, `pydantic>=2.0.0`
 - Dev: `pytest`, `ruff`, `mypy`, `pytest-cov`, `pytest-asyncio`
-- Benchmark: `tiktoken`, `pandas`, `tabulate`
+- Benchmark: `tiktoken`, `pandas`, `tabulate`, `datasets`
 
 ## Git Workflow
 
