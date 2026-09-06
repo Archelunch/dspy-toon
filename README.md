@@ -33,13 +33,11 @@ Requirements: Python 3.10 through 3.14, DSPy `>=3.3.1,<4`, and Pydantic 2. Local
 pip install dspy-toon
 ```
 
-Version 0.4.0 is being prepared for release. To try this PR before publication:
+To install from source:
 
 ```bash
-pip install "git+https://github.com/Archelunch/dspy-toon.git@improve/dspy-toon-4.1"
+pip install "git+https://github.com/Archelunch/dspy-toon.git"
 ```
-
-After publication, install the specific release with `pip install "dspy-toon==0.4.0"`.
 
 DSPy and Pydantic are the direct runtime dependencies. Pip also installs their dependencies. The wheel contains `dspy_toon`, type information and license notices; experiments, datasets, tests and blog assets stay out of the package. Benchmark dependencies are optional and documented under [development](#development-and-contributions).
 
