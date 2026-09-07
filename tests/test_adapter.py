@@ -147,8 +147,8 @@ class TestAdapterMethods:
             user: SimpleUser = dspy.OutputField()
 
         structure = adapter.format_field_structure(TestSignature)
-        # Should contain TOON format rules
-        assert "TOON" in structure
+        # Explain the structure without requiring knowledge of a format name.
+        assert "TOON" not in structure
         assert "key: value" in structure.lower()
         # Should describe output structure
         assert "user" in structure.lower()

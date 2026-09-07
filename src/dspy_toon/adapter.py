@@ -151,7 +151,7 @@ class ToonAdapter(Adapter):
 
     def format_field_structure(self, signature: type[Signature]) -> str:
         """Explain the wire format separately from the type placeholders."""
-        rules = """Respond with a TOON 4.1 object containing every output field. No code fences.
+        rules = """Respond with an object containing every output field, using the structure below. No code fences.
 - Simple values use key: value; booleans are true/false and absent nullable values are null.
 - Empty arrays are field: []; null and [] are different values.
 - Primitive arrays: field[COUNT]: item1,item2. Replace COUNT with the actual length.
@@ -181,7 +181,7 @@ Output shape examples (type words are placeholders; use actual values and counts
     ) -> str:
         """Encode the complete input object so nested values retain their depth."""
         content = encode({n: inputs[n] for n in signature.input_fields if n in inputs})
-        request = "Provide output in TOON format as shown above." if main_request else ""
+        request = "Use the output structure shown above." if main_request else ""
         return "\n\n".join(part for part in (prefix, content, request, suffix) if part)
 
     def format_assistant_message_content(

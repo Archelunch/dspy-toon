@@ -155,7 +155,7 @@ def prepare(args: argparse.Namespace) -> None:
                     "information faithfully. "
                     "Follow the result field's schema and descriptions. If the context does not "
                     "contain a requested answer, "
-                    "return null rather than guess. Return the final result using the adapter's output format.",
+                    "return null rather than guess. Return the final result using the specified output structure.",
                 }
             )
         sources.append(
@@ -216,7 +216,7 @@ def prepare(args: argparse.Namespace) -> None:
                 "gold": row["target"],
                 "instructions": "Solve the task accurately. Return the final answer alone inside the result "
                 "field, in the notation requested "
-                "by the task. Use the adapter's field format; do not include reasoning or an "
+                "by the task. Use the specified field structure; do not include reasoning or an "
                 "answer-prefix sentence in the result.",
             }
         )
