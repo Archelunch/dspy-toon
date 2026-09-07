@@ -39,3 +39,30 @@ Baseline: 109/140 accepted, 3 truncated. Candidate: 128/140 accepted, 2 truncate
 No source-input overlap with earlier adapter experiments or previous iteration rounds. SOB image tasks use supplied OCR text rather than image requests. No fresh audio suite was used because the local source had only one unused transcript context.
 
 Raw requests, responses, preparation code, source snapshots, manifests and detailed comparisons remain local. This report contains aggregates only. No model calls used JSON or Chat adapters.
+
+## Table answer audit
+
+The original TableBench scores above are unchanged. Its archived scorer compares
+non-numeric answers case-sensitively. Inspection of the three newly failing
+answers found two capitalization-only differences: `Puerto Villarroel
+municipality` versus `puerto villarroel municipality` without reasoning, and
+`Singapore` versus `singapore` with reasoning. Both identify the correct entity.
+
+As a separate post-hoc sensitivity check, applying Python `str.casefold()` to
+both predictions and references before the same scorer gives:
+
+| Reasoning | Original scorer, baseline → candidate | Case-insensitive sensitivity, baseline → candidate |
+| --- | --- | --- |
+| Off | 8/10 → 6/10 | 8/10 → 7/10 |
+| On | 10/10 → 9/10 | 10/10 → 10/10 |
+
+All 40 table responses parsed successfully. One genuine new answer error remains
+without reasoning: the candidate chose Forth and Clyde Canal instead of Crinan
+Canal for maximum locks per mile. Crinan has 15/9 ≈ 1.67 locks per mile, compared
+with 38/35 ≈ 1.09 for Forth and Clyde. Both arms answered this case correctly with
+reasoning. The other two non-reasoning errors occurred in both arms.
+
+This audit does not change library parsing or force output capitalization.
+The sensitivity metric supplements the original scorer; it is not a replacement
+benchmark result. Ten questions and one generation per condition are too few to
+establish a general table-reasoning regression or improvement.

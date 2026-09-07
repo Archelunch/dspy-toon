@@ -45,10 +45,16 @@ round 1, from 10/20 to 19/20 in round 2, and from 10/20 to 20/20 in round 3.
 These are three different generated case sets from the same small set of data
 patterns, not evidence covering all application data.
 
-Iteration 3 had a table-answer regression: 8/10 to 6/10 correct without reasoning
-and 10/10 to 9/10 with reasoning, despite 100% parsing in both arms. In the same
-round, text extraction was essentially unchanged and BBEH reasoning accuracy
-was unchanged. The final candidate is not a universal accuracy improvement.
+Iteration 3's original TableBench score fell from 8/10 to 6/10 without reasoning
+and 10/10 to 9/10 with reasoning. A subsequent trace audit found that two of the
+three newly failing answers differed only in capitalization of the correct
+entity name. Keeping the original scores and separately applying case-insensitive
+scoring to both arms gives 8/10 to 7/10 without reasoning and 10/10 to 10/10 with
+reasoning. All table responses parsed successfully. The remaining new error was
+an incorrect locks-per-mile comparison without reasoning, not malformed data.
+See the iteration-3 report for the audit and sensitivity method. Text extraction
+was essentially unchanged and BBEH reasoning accuracy was unchanged. These small
+samples do not establish a universal accuracy improvement.
 
 ## Scope and limits
 
