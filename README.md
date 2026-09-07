@@ -87,6 +87,8 @@ Your model configuration stays in DSPy. The adapter does not configure provider 
 
 ## How the adapter works
 
+The prompt includes enum choices, numeric bounds, length constraints and nullable alternatives, including fields inside lists and dictionaries. Syntax guidance follows the input and output types, and the final reminder names the expected output fields. For arrays, the prompt asks the model to quote each string item or cell so embedded commas cannot split values.
+
 For each prediction, `ToonAdapter`:
 
 1. Describes the signature's input and output fields, including types and nested field descriptions.
