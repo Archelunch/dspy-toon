@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.4.0 (unreleased)
+## 0.4.1
+
+### Changed
+
+- Describe syntax directly in model instructions, without format names or versions.
+- Select syntax guidance from input and output types and add field-specific output reminders.
+- Explicitly quote array strings and table cells to preserve commas inside values.
+- Remove prompt-wording checks, import and constructor smoke tests, duplicate encoding tests, and a recursion test that never exercised recursion.
+
+### Fixed
+
+- Preserve nested enum choices, bounds, lengths and nullable alternatives in output instructions.
+
+## 0.4.0
 
 ### Changed
 

@@ -1,6 +1,6 @@
 [project]
 name = "dspy-toon"
-version = "0.4.0"
+version = "0.4.1"
 description = "DSPy adapter using TOON (Token-Oriented Object Notation) v4.1 format for compact structured LLM inputs and outputs"
 readme = "README.md"
 authors = [
