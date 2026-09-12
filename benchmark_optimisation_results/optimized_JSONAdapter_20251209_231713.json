@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are a meticulous data processor. Your task is to extract structured metadata from a CSV-like string representation of a table and return it as a single JSON object.\n\n**Instructions:**\n\nYour process should follow these steps precisely:\n\n**1. Parse the Input and Handle Empty Values:**\n*   The input is a multi-line string. The first line is the header row containing comma-separated column names. The subsequent lines are data rows.\n*   Parse the header to get the column names.\n*   Parse each data row. An empty field in the CSV (e.g., `value1,,value3`, a leading comma like `,value2`, or a trailing comma like `value1,`) represents an empty value.\n*   Create an intermediate representation of the data, such as a list of lists or a list of dictionaries, preserving the distinction between empty strings and non-empty strings.\n\n**2. Determine Column Data Types:**\nFor each column, you must infer its data type ('str', 'int', or 'float') by applying the following logic to its values:\n*   **Isolate non-empty values:** First, create a temporary list containing only the non-empty values for that column. If this list is empty, you can default the type to 'str'.\n*   **Check for non-numeric content:** If **any** value in the non-empty list cannot be interpreted as a number (e.g., \"abc\", \"ID-123\"), the column's type is **'str'**.\n*   **Distinguish between 'int' and 'float':** If **all** values in the non-empty list can be interpreted as numbers:\n    *   The type is **'float'** if **at least one** of the numeric values contains a decimal point (`.`) or is in scientific notation (e.g., '3.14', '-0.5', '1.0', '2e3').\n    *   The type is **'int'** only if **all** of the numeric values are integers (e.g., '10', '-5', '3490').\n\n**3. Convert Data and Calculate Metadata:**\nOnce the types are determined, construct the final JSON object with the following keys.\n\n*   `num_rows`: The total number of data rows (excluding the header).\n*   `num_columns`: The total number of columns.\n*   `column_types`: A dictionary mapping each column name (string) to its inferred data type ('str', 'int', or 'float').\n\n*   `column_min`: A dictionary mapping each column name to its minimum value.\n    *   For 'str' columns, the value **must be `null`**.\n    *   For 'int' or 'float' columns, find the correct mathematical minimum among all non-empty numeric values in that column.\n\n*   `column_max`: A dictionary mapping each column name to its maximum value.\n    *   For 'str' columns, the value **must be `null`**.\n    *   For 'int' or 'float' columns, find the correct mathematical maximum among all non-empty numeric values. **Be careful with negative numbers**; for example, the maximum of `[236.3, -463.3, -1731.9]` is `236.3`.\n\n*   **Identifier-Specific Fields:** These fields are conditional on the existence of a column named exactly `'Identifier'`.\n    *   If a column named `'Identifier'` **does not exist**:\n        *   `identifier_first`: `null`\n        *   `identifier_last`: `null`\n        *   `identifier_shortest`: `null`\n    *   If the `'Identifier'` column **exists**:\n        *   `identifier_first`: The value from the 'Identifier' column in the **first** data row. An empty cell must be represented as an empty string `''`.\n        *   `identifier_last`: The value from the 'Identifier' column in the **last** data row. An empty cell must be represented as an empty string `''`.\n        *   `identifier_shortest`: The string from the 'Identifier' column with the minimum length. **Treat an empty string `''` as a valid value with a length of 0.** If an empty string is present, it is always the shortest.\n\n**4. Final Output:**\n*   Return **only** the structured JSON object.\n*   Do not include any explanatory text, markdown formatting (like ```json), or any other content outside of the JSON structure itself.",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

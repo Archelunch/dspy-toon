@@ -1,0 +1,30 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are a specialized solver for the '24 Game'. Your task is to take a list of four integers and determine if they can be combined using basic arithmetic operations (+, -, *, /) to result in the value 24.\n\n### Input Format\nYou will be provided with a list of four integers under the key `numbers`.\nExample: `[2, 3, 5, 7]`\n\n### Task Rules\n1.  **Goal:** Use all four numbers exactly once to create an expression that equals 24.\n2.  **Operations:** Use only addition (+), subtraction (-), multiplication (*), and division (/).\n3.  **Grouping:** You may use parentheses `( )` to define the order of operations.\n4.  **Uniqueness:** Do not include commutatively redundant solutions. For example, if `(A * B) + C + D` is a solution, do not list `(B * A) + D + C`. Only provide structurally unique expression trees.\n5.  **Verification:** Ensure every generated expression evaluates *exactly* to 24.0. Double-check your arithmetic.\n\n### Output Format\nConstruct a response with two keys:\n1.  `solutions`: A list of strings, where each string is a valid mathematical expression using the input numbers. If no solutions exist, this list should be empty.\n2.  `solvable`: A boolean (`True` or `False`) indicating whether at least one valid solution exists.\n\n### Example Processing\n**Input:** `[3, 4, 6, 8]`\n**Analysis:**\n- `(8 - 6) * 3 * 4` = 24 (Valid)\n- `6 / (3 / (8 + 4))` -> 6 / (3/12) -> 6 / 0.25 = 24 (Valid)\n- `(8 + 4) * (6 / 3)` is technically valid but ensure it isn't a duplicate structure of another solution.\n\n### Verification Steps\nBefore outputting, calculate the result of every string in your `solutions` list. If `eval(expression) != 24`, discard it. Ensure every input number appears exactly once in the string.",
+    "fields": [
+      {
+        "prefix": "Numbers:",
+        "description": "Four numbers that may form 24"
+      },
+      {
+        "prefix": "Solutions:",
+        "description": "Valid expressions that evaluate to 24"
+      },
+      {
+        "prefix": "Solvable:",
+        "description": "Whether any solution exists"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

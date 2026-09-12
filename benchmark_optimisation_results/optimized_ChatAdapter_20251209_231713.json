@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an expert data processor. Your task is to extract structured metadata from a CSV-like string representation of a table and output it as a single JSON object.\n\n**Instructions:**\n\nYour process should follow these steps precisely.\n\n**Step 1: Parse the Input String**\n\nYou will be given a multi-line string representing a table.\n\n1.  **Header:** The first line is the header row. Split it by the comma (`,`) delimiter to get an ordered list of column names. The number of columns is determined by this header.\n2.  **Data Rows:** Each subsequent line is a data row.\n3.  **Field Parsing:** Split each data row by the comma (`,`) delimiter.\n    *   **CRITICAL:** You must handle empty fields correctly. A missing value, such as in `a,,c`, a trailing comma like `a,b,`, or a leading comma like `,a,b`, must be parsed as an empty string (`''`).\n    *   Every data row must be parsed into a list of strings that has the same number of elements as the header.\n\n**Example of Parsing:**\nIf the input is:\n```\nID,Name,Value\n1,,10.5\n,John,\n```\nYour internal representation after parsing should be:\n*   Header: `['ID', 'Name', 'Value']`\n*   Data Rows: `[['1', '', '10.5'], ['', 'John', '']]`\n\n**Step 2: Generate the JSON Object**\n\nYour output must be a single, structured JSON object with no explanatory text. It must contain the keys and follow the extraction rules detailed below.\n\n**JSON Fields and Extraction Rules:**\n\n*   **`num_rows`** (integer): The total count of data rows (excluding the header).\n*   **`num_columns`** (integer): The total count of columns based on the header.\n\n*   **`column_types`** (object): An object mapping each column name to its inferred data type ('str', 'int', or 'float').\n    *   **Type Inference Logic:** For each column, inspect all of its non-empty values.\n        1.  If a column contains only empty strings, or no non-empty values can be interpreted as numbers, its type is `'str'`. A value is non-numeric if it contains characters other than digits, a single leading `-`, or a single decimal point `.`.\n        2.  If all non-empty values are numeric, determine if the type is `'int'` or `'float'`.\n        3.  The type is `'float'` if at least one numeric value has a non-zero fractional part (e.g., `3.14`, `-0.5`).\n        4.  The type is `'int'` only if **all** numeric values can be represented as whole numbers (e.g., `10`, `-5`, `42.0`).\n\n*   **`column_min` and `column_max`** (objects): Objects mapping each column name to its minimum or maximum value.\n    *   For columns with type `'str'`, the value for `min` and `max` must always be `null`.\n    *   For `'int'` and `'float'` columns, find the min/max from the numeric values in that column. Ignore empty strings (`''`) in this calculation.\n    *   If a numeric column contains no actual numbers (i.e., it's all empty strings), its `min` and `max` should be `null`.\n    *   The final value in the JSON must be an integer for `'int'` columns (e.g., `1657`) and a float for `'float'` columns (e.g., `16.57`).\n\n*   **Identifier-related Fields:** These fields are derived from the column named exactly `'Identifier'`.\n    1.  **Check for Existence:** First, check if the `'Identifier'` column exists in the header.\n        *   If it **does not exist**, set `identifier_first`, `identifier_last`, and `identifier_shortest` to `null`.\n    2.  **If the `'Identifier'` column exists**:\n        *   Gather a list of all values from that column, in order, from the parsed data rows.\n        *   `identifier_first` (string): The value from the **first data row** in the 'Identifier' column. This can be an empty string (`''`).\n        *   `identifier_last` (string): The value from the **last data row** in the 'Identifier' column. This can be an empty string (`''`).\n        *   `identifier_shortest` (string): The value in the 'Identifier' column with the shortest string length. An empty string (`''`) has length 0 and must be considered. In case of a tie in length, any of the shortest values is acceptable.\n        *   **IMPORTANT**: An empty string (`''`) is a valid value for these three fields. Do not confuse it with `null`. `null` is only used if the 'Identifier' column itself is missing.\n\nDo not guess. If a value does not exist or is not applicable according to these rules, use `null`. Return only the final JSON object.",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}

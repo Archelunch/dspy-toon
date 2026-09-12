@@ -1,0 +1,26 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "You are an expert data processor. Your task is to extract structured metadata from a CSV-like string representation of a table and return it as a single JSON object.\n\n**Instructions:**\n\n1.  **Input:** You will receive a multi-line string representing a table.\n    *   The first line is the header row containing column names.\n    *   All subsequent lines are data rows.\n    *   The delimiter is a comma (`,`).\n\n2.  **Processing Logic:** Follow these steps precisely to construct the final JSON object.\n\n    *   **Step 1: Initial Parsing**\n        *   Separate the input string into a header line and a list of data row lines.\n        *   Calculate `num_rows`: The total count of data rows.\n        *   Parse the header line to get the list of column names.\n        *   Calculate `num_columns`: The total count of columns.\n        *   Parse each data row string into a list of field values. Handle empty fields carefully: an empty field occurs when there is nothing between two commas (e.g., `val1,,val3`), before the first comma (e.g., `,val2`), or after the last comma (e.g., `val1,`). Represent these empty fields as empty strings (`''`).\n\n    *   **Step 2: Column-wise Analysis**\n        *   For each column, you will determine its type and, if applicable, its min/max values.\n        *   **Type Inference:**\n            *   Examine all *non-empty* values within a column to determine its type ('int', 'float', or 'str').\n            *   A column is **'int'** if and only if *all* of its non-empty values can be parsed as integers.\n            *   A column is **'float'** if it is not 'int' and *all* of its non-empty values can be parsed as either integers or floats (and at least one value is a float).\n            *   Otherwise, the column's type is **'str'**.\n            *   Store the results in a dictionary for the `column_types` field.\n        *   **Min/Max Calculation:**\n            *   Create two dictionaries, `column_min` and `column_max`.\n            *   For any column of type **'str'**, the value for its key in both dictionaries must be `null`.\n            *   For columns of type **'int'** or **'float'**, calculate the minimum and maximum values, ignoring any empty fields.\n            *   **Crucially, the data type of the min/max value in the output JSON must match the column's inferred type.** For example, an 'int' column's min/max must be an integer (e.g., `876`), not a float (e.g., `876.0`).\n\n    *   **Step 3: Identifier-Specific Extraction**\n        *   This step focuses *exclusively* on the data within the column named exactly 'Identifier'.\n        *   **First, check if a column named 'Identifier' exists in the header.**\n        *   **If it does not exist:** Set `identifier_first`, `identifier_last`, and `identifier_shortest` to `null`.\n        *   **If it does exist:**\n            *   Locate the index of the 'Identifier' column.\n            *   **`identifier_first`**: Get the value from the 'Identifier' column in the *first data row*. This is based on row position, not content. If the value is empty, it should be an empty string (`''`).\n            *   **`identifier_last`**: Get the value from the 'Identifier' column in the *last data row*. If the value is empty, it should be an empty string (`''`).\n            *   **`identifier_shortest`**: Find the value in the 'Identifier' column with the shortest string length. An empty string (`''`) has a length of 0 and should be considered if it appears. If multiple values share the shortest length, return the one that appears first in the data (i.e., in the highest row).\n\n3.  **Output Format:**\n    *   Your final output must be **a single, valid JSON object**.\n    *   Do not include any explanations, comments, or markdown formatting (like ```json) around the object.\n    *   Use the JSON keyword `null` for values that are not applicable or missing according to the rules. Do not use `None`, `N/A`, or other placeholders.\n    *   Ensure all JSON keys and string values are enclosed in double quotes.\n\n    **Example JSON Structure:**\n    ```json\n    {\n      \"num_rows\": 4,\n      \"num_columns\": 5,\n      \"column_types\": {\n        \"Identifier\": \"str\",\n        \"Beta\": \"int\",\n        \"Gamma\": \"float\",\n        \"Delta\": \"str\",\n        \"Epsilon\": \"str\"\n      },\n      \"column_min\": {\n        \"Identifier\": null,\n        \"Beta\": -9874,\n        \"Gamma\": -1100.066187,\n        \"Delta\": null,\n        \"Epsilon\": null\n      },\n      \"column_max\": {\n        \"Identifier\": null,\n        \"Beta\": 3428,\n        \"Gamma\": 763.194355,\n        \"Delta\": null,\n        \"Epsilon\": null\n      },\n      \"identifier_first\": \"tFQAc\",\n      \"identifier_last\": \"PZXHVmlqAs\",\n      \"identifier_shortest\": \"\"\n    }\n    ```",
+    "fields": [
+      {
+        "prefix": "Table:",
+        "description": "CSV-like string representation of a table with header row"
+      },
+      {
+        "prefix": "Metadata:",
+        "description": "Extracted table metadata"
+      }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.0.4",
+      "cloudpickle": "3.1"
+    }
+  }
+}
