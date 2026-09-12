@@ -5,29 +5,34 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/mike_pavlukhin)
 
-DSPy-TOON is a [DSPy](https://dspy.ai/) adapter for structured LLM inputs and outputs in [TOON](https://github.com/toon-format/spec). Define your fields with DSPy signatures and Pydantic models, configure `ToonAdapter`, and use your DSPy predictors as usual. The adapter handles prompt formatting, serialization and output validation.
+[DSPy](https://dspy.ai/) adapter for structured LLM inputs and outputs in [TOON](https://github.com/toon-format/spec).
 
-The package also exposes its Python encoder and decoder for applications that need TOON without running a predictor. It maintains its own codec and targets TOON 4.1.
+- **Typed outputs:** Pydantic models, nested objects, lists, dictionaries, unions and `Literal` values.
+- **Schema guidance:** field descriptions, enum choices, bounds and nullable fields in model instructions.
+- **Compact serialization:** shared headers for uniform records, nested field groups and keyed tables.
+- **DSPy integration:** synchronous and asynchronous predictions, demonstrations and conversation history.
+- **Standalone codec:** `encode()` and `decode()` for Python data.
+- **Streaming:** optional incremental output for scalar fields.
 
-TOON puts repeated field names in a shared header. This can reduce token use for lists of records, uniform nested objects and dictionaries of records. Savings depend on the data and the complete prompt: compact JSON can be smaller for irregular objects, and generating a compact format does not guarantee correct output.
+[Examples](https://github.com/Archelunch/dspy-toon/tree/main/examples) · [Changelog](https://github.com/Archelunch/dspy-toon/blob/main/CHANGELOG.md) · [Migration guide](https://github.com/Archelunch/dspy-toon/blob/main/UPGRADE.md)
 
 ## Contents
 
 - [Installation](#installation)
 - [Quick start](#quick-start)
-- [How the adapter works](#how-the-adapter-works)
+- [Adapter behavior](#adapter-behavior)
 - [Typed outputs](#typed-outputs)
 - [TOON format](#toon-format)
 - [Encoder and decoder API](#encoder-and-decoder-api)
 - [Async calls](#async-calls)
 - [Streaming](#streaming)
 - [Benchmarks](#benchmarks)
-- [Upgrading to 0.4.0](#upgrading-to-040)
+- [Migration](#migration)
 - [Development and contributions](#development-and-contributions)
 
 ## Installation
 
-Requirements: Python 3.10 through 3.14, DSPy `>=3.3.1,<4`, and Pydantic 2. Local validation for this release used Python 3.12 and DSPy 3.3.1.
+Python 3.10–3.14, DSPy `>=3.3.1,<4`, and Pydantic 2.
 
 ```bash
 pip install dspy-toon
@@ -39,11 +44,9 @@ To install from source:
 pip install "git+https://github.com/Archelunch/dspy-toon.git"
 ```
 
-DSPy and Pydantic are the direct runtime dependencies. Pip also installs their dependencies. The wheel contains `dspy_toon`, type information and license notices; experiments, datasets, tests and blog assets stay out of the package. Benchmark dependencies are optional and documented under [development](#development-and-contributions).
-
 ## Quick start
 
-Set the credentials for your model provider. This example uses `OPENAI_API_KEY`:
+Set `OPENAI_API_KEY` for this example:
 
 ```python
 import dspy
@@ -74,37 +77,34 @@ print(result.user.name)
 print(result.user.model_dump())
 ```
 
-`result.user` is a validated `UserInfo` instance. Field descriptions guide the model; constraints such as `ge=0` validate its answer.
+`result.user` is a validated `UserInfo` instance.
 
-To select the adapter for a block of calls, use DSPy's context manager:
+Use `dspy.context()` to scope the adapter to a block:
 
 ```python
 with dspy.context(adapter=ToonAdapter()):
     result = extractor(text="Bob is 28 and works as a designer.")
 ```
 
-Your model configuration stays in DSPy. The adapter does not configure provider credentials or run a model server.
+## Adapter behavior
 
-## How the adapter works
+`ToonAdapter` formats input fields and demonstrations as TOON, generates output examples from the signature, and validates returned fields with Pydantic. Instructions include nested constraints and syntax rules for the declared input and output types.
 
-The prompt includes enum choices, numeric bounds, length constraints and nullable alternatives, including fields inside lists and dictionaries. Syntax guidance follows the input and output types, and the final reminder names the expected output fields. For arrays, the prompt asks the model to quote each string item or cell so embedded commas cannot split values.
+The adapter uses DSPy's call, async and demonstration handling. Conversation history supports `dspy.History` and legacy lists of user/assistant pairs.
 
-For each prediction, `ToonAdapter`:
-
-1. Describes the signature's input and output fields, including types and nested field descriptions.
-2. Adds TOON syntax instructions and output shape examples generated by the encoder.
-3. Serializes the input fields and demonstration outputs as complete TOON objects.
-4. Parses the model's response and validates each output against its signature annotation with Pydantic.
-
-Both input and output formatting change when you switch adapters. To serialize only a data payload for an otherwise unchanged prompt, call `encode()` directly.
-
-The adapter inherits DSPy's synchronous and asynchronous call paths and demo handling. It supports `dspy.History`; legacy lists of user/assistant pairs are also accepted. Review serialized demonstrations and saved optimizer artifacts when changing adapter or format versions. The upgrade does not establish optimizer-specific quality improvements.
+To encode a payload without changing the output adapter, use [`encode()`](#encoder-and-decoder-api).
 
 ### Output validation and errors
 
-Responses must contain the signature's output fields. Unexpected fields and missing required fields raise `AdapterParseError`. Missing defaulted or nullable output fields follow DSPy 3.3.1's output-default handling.
-
-The parser accepts a complete TOON document, a complete JSON object as a fallback, or a document enclosed in a code fence. It does not recover arbitrary fragments from surrounding prose. JSON fallback still goes through the same field validation.
+| Response | Behavior |
+|---|---|
+| Complete TOON document | Decoded and validated against the signature |
+| Complete JSON object | Accepted as a fallback, with the same validation |
+| Document inside a code fence | Outer fence removed before parsing |
+| Missing required or unexpected output fields | Raises `AdapterParseError` |
+| Missing defaulted or nullable output fields | Uses DSPy's output-default handling |
+| Malformed TOON, mismatched counts or duplicate keys | Rejected during decoding |
+| Fragments embedded in prose | Not recovered |
 
 ```python
 from dspy.utils.exceptions import AdapterParseError
@@ -113,12 +113,13 @@ try:
     result = extractor(text="Alice is 35 and works as an engineer.")
 except AdapterParseError as error:
     print(error)
-    # Decide whether to retry, ask for clarification, or reject the result.
 ```
 
-Validation follows Pydantic's normal coercion rules unless your annotations request strict types. It checks the declared types and constraints, not whether the extracted facts match the source. Malformed TOON, wrong array lengths and duplicate keys fail during decoding.
+Validation uses Pydantic's coercion rules unless the annotation specifies strict types. It checks types and constraints; it does not verify factual correctness.
 
-To inspect the actual prompt without making a model call:
+### Inspect the prompt
+
+`format()` returns the messages without calling the model:
 
 ```python
 adapter = ToonAdapter()
@@ -131,15 +132,13 @@ for message in messages:
     print(message["role"], message["content"], sep="\n")
 ```
 
-This is useful when comparing adapter overhead or checking how descriptions and nested inputs reach the model.
-
 ## Typed outputs
 
 The examples below use the model configuration from the quick start.
 
 ### Lists of records
 
-Uniform records share a tabular header in TOON. Define the output as a list of Pydantic models and iterate over the returned models normally:
+Declare lists with `list[Model]`:
 
 ```python
 class ExtractPeople(dspy.Signature):
@@ -157,7 +156,7 @@ for person in result.people:
     print(person.name, person.age, person.occupation)
 ```
 
-The same model types can be used in input fields. The encoder handles Pydantic models inside lists and dictionaries recursively.
+Pydantic models are also supported in input fields, including nested lists and dictionaries.
 
 ### Nested models and nullable fields
 
@@ -214,21 +213,21 @@ result = analyzer(text="I love this product. It works exactly as promised.")
 print(result.result.sentiment, result.result.confidence)
 ```
 
-The adapter renders union and `Literal` annotations in its type guidance and validates them on return. A valid confidence value is not a calibrated probability merely because it lies between 0 and 1.
+`Literal` restricts the accepted labels. `ge` and `le` validate numeric bounds.
 
 ## TOON format
 
-These are serialization examples. The full adapter prompt also includes task instructions, field descriptions and format guidance.
+The codec targets TOON 4.1. Uniform records share field names in a header.
 
 ### Flat records
 
-JSON repeats the keys:
+JSON:
 
 ```json
 {"people":[{"name":"Alice","age":35},{"name":"Bob","age":28}]}
 ```
 
-TOON lists them once:
+TOON:
 
 ```text
 people[2]{name,age}:
@@ -237,8 +236,6 @@ people[2]{name,age}:
 ```
 
 ### Nested field groups
-
-Uniform nested objects can share a header as well:
 
 ```text
 people[2]{name,address{city,country}}:
@@ -250,7 +247,7 @@ Each row reconstructs an object with `name` and a nested `address` object.
 
 ### Keyed tables
 
-Dictionaries of uniform records retain their keys in keyed rows:
+Keyed tables encode dictionaries of uniform records:
 
 ```text
 people[2:]{age,city}:
@@ -277,7 +274,7 @@ items[2]:
 
 Empty arrays use `items: []`. Nullable values use `address: null`. Strings that resemble numbers, booleans or null are quoted to preserve their type. The encoder also quotes delimiter-sensitive strings and escapes control characters.
 
-TOON 4.1 is the working draft reviewed for this release. See the pinned specification and compatibility notes in [UPGRADE.md](https://github.com/Archelunch/dspy-toon/blob/main/UPGRADE.md).
+Specification and compatibility details: [UPGRADE.md](https://github.com/Archelunch/dspy-toon/blob/main/UPGRADE.md).
 
 ## Encoder and decoder API
 
@@ -317,13 +314,13 @@ assert restored == records
 
 The adapter uses the codec defaults. These options configure standalone `encode()` and `decode()` calls; `ToonAdapter` does not expose a codec-options argument.
 
-Keep strict decoding enabled for model output. Non-strict decoding tolerates count and width mismatches, keeps the last duplicate key, and relaxes indentation. It can omit missing cells or ignore extra cells, so it is unsuitable as a general repair step when data integrity matters. The obsolete `lengthMarker` encoding option raises an error.
+Non-strict decoding relaxes indentation, tolerates count and width mismatches, and keeps the last duplicate key. Missing cells may be omitted and extra cells ignored. Use strict decoding for model output. The obsolete `lengthMarker` option raises an error.
 
 ### Python value conversion
 
 Pydantic models use `model_dump()` recursively. Dictionaries become objects, tuples and sets become arrays, and dates use ISO 8601 strings. Dictionary keys become strings. `decode()` returns plain Python values; the adapter reconstructs typed outputs separately.
 
-Integers retain Python precision. Decimal inputs use float approximation, and non-finite float values encode as `null`. Unsupported Python objects also encode as `null`, so normalize custom values before encoding them. The codec is a data serializer, not a lossless serializer for arbitrary Python objects.
+Integers retain Python precision. Decimal inputs use float approximation. Non-finite floats and unsupported Python objects encode as `null`; convert custom objects before encoding.
 
 ```python
 try:
@@ -414,15 +411,13 @@ for chunk in stream_predict(question="What is a hash collision?"):
 
 Incremental chunks contain raw TOON text, including string quotes and escape sequences. Use the final `Prediction` for decoded, validated values. Arrays, tables and keyed objects arrive in that final prediction rather than as incrementally decoded records.
 
-`enable_toon_streaming()` is idempotent and patches DSPy's internal `StreamListener` methods for the process. Calls using other adapters delegate to the original methods. This integration was checked with DSPy 3.3.1; recheck it when upgrading DSPy because the listener internals are not a stable registration API.
+`enable_toon_streaming()` is idempotent and patches DSPy's internal `StreamListener` methods for the process. Other adapters use the original methods. The integration is tested against DSPy 3.3.1 and depends on its internal listener API.
 
 See DSPy's [streaming documentation](https://dspy.ai/tutorials/streaming/) for listener and program configuration.
 
 ## Benchmarks
 
-Measure the complete request and response for your workload. Encoder-only token counts omit format instructions, schemas and demonstrations. Model runs also need to account for reasoning tokens, parse failures and answer quality.
-
-Our Qwen3.8-27B-FP8 experiments compare adapter behavior and separate input serialization from output generation:
+Token savings depend on data shape and the complete prompt. Uniform records can be smaller in TOON; compact JSON can be smaller for irregular structures.
 
 | Experiment | Scope | Report |
 |---|---|---|
@@ -430,20 +425,13 @@ Our Qwen3.8-27B-FP8 experiments compare adapter behavior and separate input seri
 | Expanded comparison | 4,376 scored calls across 544 fresh cases, including input/output format ablations | [Expanded report](https://github.com/Archelunch/dspy-toon/blob/main/benchmark_results/qwen_blog_expanded/BLOG_DATA.md) |
 | Input-format study | Upstream reading tasks and synthetic tool-result workloads with controlled outputs | [Interpretation](https://github.com/Archelunch/dspy-toon/blob/main/benchmark_results/qwen_input_study/INTERPRETATION.md) |
 
-The input study found lower total token use for uniform inventory, nested customer records and keyed service maps when the model returned JSON. Irregular logs and nested order arrays used more tokens. Parsing policy changed some apparent accuracy differences. These are measurements from one model deployment, not a general accuracy or savings guarantee.
+Reports cover token usage, parsing and task accuracy on one Qwen3.8-27B-FP8 deployment. See [data availability](https://github.com/Archelunch/dspy-toon/blob/main/benchmark_results/DATA_AVAILABILITY.md) for archive access details.
 
-Reports include task definitions, sample sizes, uncertainty and failure accounting. Raw model payloads remain in a local archive pending publication review; see [data availability](https://github.com/Archelunch/dspy-toon/blob/main/benchmark_results/DATA_AVAILABILITY.md). The [blog draft](https://github.com/Archelunch/dspy-toon/blob/main/blog/toon-vs-json-in-dspy.md) discusses the experiments and charts in more detail.
+## Migration
 
-## Upgrading to 0.4.0
+See [UPGRADE.md](https://github.com/Archelunch/dspy-toon/blob/main/UPGRADE.md) for changes to array syntax, keyed tables, comments and output validation. Upgrade readers before writers when exchanging TOON with another system. Regenerate stored prompts and demonstrations after a format upgrade.
 
-- Upgrade readers before writers if you exchange TOON with another system. Older codecs may not understand nested field groups and keyed tables.
-- Regenerate stored prompts and demos that depend on the earlier syntax. Empty arrays now encode as `[]`; the decoder still accepts legacy `[0]:` forms.
-- Re-encode affected old list-item tables with the previous reader and the new writer. Strict decoding rejects the old codec's under-indented rows.
-- Review hash-leading strings in stored v3 documents. Full lines starting with `#` are comments in v4; the new encoder quotes those strings.
-- Handle `AdapterParseError` where callers previously relied on permissive parsing. Outputs now pass through complete-document parsing and Pydantic validation.
-- Install the benchmark extra explicitly if your scripts use dataset tooling.
-
-See [UPGRADE.md](https://github.com/Archelunch/dspy-toon/blob/main/UPGRADE.md) for the pinned specification, migration details and verification results, and the [changelog](https://github.com/Archelunch/dspy-toon/blob/main/CHANGELOG.md) for the release history.
+Release history: [CHANGELOG.md](https://github.com/Archelunch/dspy-toon/blob/main/CHANGELOG.md).
 
 ## Development and contributions
 
@@ -467,9 +455,7 @@ pip install -e ".[benchmark]"
 python -m benchmarks.adapter_comparison --model gemini/gemini-2.5-flash-lite
 ```
 
-The benchmark extra installs dependencies, not benchmark modules into site-packages. Scripts, datasets and reports belong to the repository. Individual experiments may need additional setup; consult their protocols before running them.
-
-The library has four modules: `adapter.py` for DSPy integration, `toon.py` for serialization, `streaming.py` for the optional listener integration, and `__init__.py` for public exports. The [examples directory](https://github.com/Archelunch/dspy-toon/tree/main/examples) contains extraction, tabular-data and nested-model examples.
+Run benchmark scripts from a repository checkout; they are not included in the pip package. Each experiment's protocol lists its dataset and model requirements.
 
 See [CONTRIBUTING.md](https://github.com/Archelunch/dspy-toon/blob/main/CONTRIBUTING.md) for contribution guidelines. Include a reproducible input and the expected output when reporting a codec or adapter issue.
 
